@@ -1,0 +1,87 @@
+- FIX: Language changes
+  - Now cameras, melon seeds, pumpkin stems, and double stone slabs have names!
+  - Invisible bedrock now has a name and description id
+  - The unmoving water and lava now have a "Still " prefix
+  - Carried grass and carried leaves now have a "Carried " prefix
+- FIX: Zombie pigmen don't burn in daylight
+  - In classic Mojank fashion, they were already fireproof, except for the sun
+- FIX: grass_carried's bottom texture is no longer the same as the top
+- FIX: The crosshair does not render in 3rd person mode
+- FIX: MCPI-Addons (v1.2.4 to v1.2.5) used CreatorLevel instead of ServerLevel, which stops the level from ticking
+- FIX: Camera legs now render properly
+- QOL: You can get rid of camera with shift-left click
+- QOL: You can adjust cameras by left clicking, and exiting by shifting
+  - TODO: Fix "astral projection" bug
+- QOL: Charcoal has been removed
+  - There is now only one torch recipe, and it can use any coal or charcoal
+  - Furnaces make normal coal
+  - Old charcoal can be stacked with coal to turn it into coal
+- QOL: You can swing through non-solid blocks with a sword
+  - This incudes: grass, flowers, signs, torches, and cobwebs
+- QOL: Added apple skin like overlay
+  - This was merged with Reborn, so isn't included
+  - "Oh neat!" and "Overall, looks good!" from TBR made my day :)
+- QOL: Animal followimg
+  - Cows and sheep like wheat
+  - Chickens like seeds
+  - Pigs like a lot of non-meat food, including mushrooms
+  - TODO: Breeding?
+- QOL: Double doors
+  - Doors that are next to each other will open and close together
+- QOL: Removed signs text loading limit
+  - Shouldn't effect most users, but if you are messing around with mods it might be useful
+- QOL/ADDED: Defusing TNT
+  - TNT can be defused with shears
+  - Be careful! Once defused, the TNT will ignite when broken
+- ADDED: Conveyor Belts
+  - They move entitys in the direction they are facing
+  - Snazy animated texture!
+    - I hate graphics code and will never write it again
+  - Items on it do not despawn and cannot be picked up
+  - Attached items can be picked up by clicking the belt
+- ADDED: Nether Wand
+  - TODO: Test in survival
+  - Crafted from iron and the nether core
+  - Can be used to transform blocks and items into other blocks and items
+    - Cobble into netherack
+    - Sand into gravel
+    - Bricks into nether bricks
+    - Flowers and saplings into dead bushes
+    - Mushrooms into the other mushrooms
+    - Seeds into melon seeds
+    - Sugar or gunpowder into glowstone
+    - Cactus into a slime ball
+    - Water and milk buckets into empty buckets
+    - Diamonds into ender pearls
+    - Redstone dust into a thrust crystal
+  - Can also be used to turn pigs into pigmen
+  - THIS IS TEMPORARY, once these items have a "real" recipe, you won't be able to make them with the wand.
+- ADDED: Redstone Dust
+  - Don't get your hopes up, it doesn't do much... yet ;)
+  - Dropped by redstone ore
+- ADDED: Ender pearls
+  - They can be thrown and teleport you
+  - No cooldown because that's boring, it does hurt you a little
+- ADDED: Bombs
+  - They are a projectile you can throw
+  - They don't damage terrain or entities, just blasts entities back. Great for going up or knocking entities around!
+  - Can be used to stop fall damage if you are quick
+  - Can be made with gunpowder and string
+  - TODO: Fix entity y vel
+  - TODO: Fix y vel after clipping into the world border
+  - ADDED: Thrust Crystal
+  - They boost you in the direction you are looking. Great for horizontal movement!
+  - Again, no cool down, but they do hurt you a bit.
+  - Can be made by applying a nether wand to redstone
+- ADDED: Pedestals
+  - TODO: Fix item angles for most thing
+  - TODO: Fix item drops on break
+  - Spinny!
+  - You can put items on and off of them
+  - Spinning is synced across all pedestals
+- ADDED: Block Frames
+  - Almost any block can be a slab, stair, fence, or gate!
+  - So far just bottom slabs
+  - TODO: Other states
+  - TODO: Fix updating
+  - TODO: mekanic wrench
