@@ -37,7 +37,7 @@ static int BlockFrame_getRenderLayer(UNUSED EntityTile *self) {
 }
 
 static int BlockFrame_getTexture2(UNUSED EntityTile *self, UNUSED int face, UNUSED int data) {
-    return INVALID_TEXTURE;
+    return FRAME_TEXTURE;
 }
 
 static int BlockFrame_getTexture3(EntityTile *self, LevelSource *_level, int x, int y, int z, int face) {
@@ -60,7 +60,7 @@ void make_frame() {
     // Construct
     frame = alloc_EntityTile();
     ALLOC_CHECK(frame);
-    int texture = INVALID_TEXTURE;
+    int texture = FRAME_TEXTURE;
     Tile_constructor((Tile *) frame, FRAME_TILE_ID, texture, Material_stone);
     Tile_isEntityTile[FRAME_TILE_ID] = true;
     frame->texture = texture;

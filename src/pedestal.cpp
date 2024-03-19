@@ -187,7 +187,7 @@ static void PedestalTileEntityRenderer_render(UNUSED TileEntityRenderer *self, T
     std::string file = "terrain.png";
     EntityRenderer_bindTexture(NULL, &file);
     glScalef(0.25f, 0.25f, 0.25f);
-    ItemInHandRenderer_renderItem(*ItemInHandRenderer_instance, NULL, &pedestal_te->item);
+    ItemInHandRenderer_renderItem(EntityRenderer_entityRenderDispatcher->item_renderer, NULL, &pedestal_te->item);
     glPopMatrix();
 }
 

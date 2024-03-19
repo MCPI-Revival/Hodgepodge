@@ -91,6 +91,8 @@ static void Inventory_setupDefault_FillingContainer_addItem_call_injection(Filli
     ADD_ITEM(33);
     // Sticky piston
     ADD_ITEM(29);
+    // Moving piston
+    ADD_ITEM(36);
     // Redstone block
     ADD_ITEM(152);
     // OBBs

@@ -1,4 +1,4 @@
 #pragma once
 
-#define INVALID_TEXTURE 187
+#define INVALID_TEXTURE 172
 extern Minecraft *mc;
