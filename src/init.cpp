@@ -207,6 +207,7 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     // Add some cool splashes
     splashes.push_back("Type :music2: in chat!");
     splashes.push_back("I am the very model of a modern major general");
+    splashes.push_back("Good guys, bad guys, and explosions!");
     splashes.push_back("Drinking lava is a feature not a bug");
     splashes.push_back("We *could* have backwards compat :(");
     splashes.push_back("I'll tell me ma!");
@@ -217,8 +218,9 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     splashes.push_back("Poor wandering one");
     splashes.push_back("NO SOUND AT ALL!");
     splashes.push_back("'I didn't say that!' -TBR");
+    // `\3` is a heart
     splashes.push_back("I \3 extract_from_bl_instruction");
-    splashes.push_back("Chestnace not included!");
+    splashes.push_back("Chestnace not included!"); // Or is it...?
     splashes.push_back("Work in progress!");
     splashes.push_back("Gold > Diamond!");
 }

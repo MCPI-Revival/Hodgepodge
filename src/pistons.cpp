@@ -48,6 +48,7 @@ static bool PistonBase_isSolidRender(UNUSED Tile *self) {
     return false;
 }
 
+static void PistonBase_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId);
 static void PistonBase_setPlacedBy(Tile *self, Level *level, int x, int y, int z, Mob *placer) {
     int face = (int) std::floor((placer->yaw * 4.0) / 360.0 + 0.5) & 3;
     if (face == 0) {
@@ -63,6 +64,7 @@ static void PistonBase_setPlacedBy(Tile *self, Level *level, int x, int y, int z
     if (placer->pitch > 55) face = 1;
     else if (placer->pitch < -55) face = 0;
     Level_setTileAndData(level, x, y, z, self->id, face);
+    PistonBase_neighborChanged(self, level, x, y, z, 0);
 }
 
 static int PistonBase_getTexture3(Tile *self, UNUSED LevelSource *levelsrc, int x, int y, int z, int face) {
@@ -95,7 +97,8 @@ static bool getNeighborSignal(Level *level, int x, int y, int z, int direction) 
         || (direction != 5 && Level_getSignal(level, x + 1, y, z, 5))
         || Level_getSignal(level, x, y, z, 0)
 #ifdef USE_QC
-        || Level_getSignal(level, x, y + 2, z, 1)
+        // Small tweak, pistons pointing up ignore QC on the block they are holding (such as a redstone block)
+        || (direction != 1 && Level_getSignal(level, x, y + 2, z, 1))
         || Level_getSignal(level, x, y + 1, z - 1, 2)
         || Level_getSignal(level, x, y + 1, z + 1, 3)
         || Level_getSignal(level, x - 1, y + 1, z, 4)
@@ -107,11 +110,11 @@ static bool getNeighborSignal(Level *level, int x, int y, int z, int direction) 
 static bool pushable(Level *level, int x, int y, int z, int id) {
     if (id == 0) return true;
     Tile *t = Tile_tiles[id];
-    if (id == 49 || id == 7 || t->destroyTime == -1) {
+    if (id == 49 || id == 7 || t->destroyTime == -1 || id == 36) {
         return false;
     } else if (Tile_isEntityTile[id]) {
         return false;
-    } else if (id == 29 || id == 33 || id == 36) {
+    } else if (id == 29 || id == 33) {
         // Active pistons can't be pushed
         return level->vtable->getData(level, x, y, z) & 0b0111;
     }
@@ -212,6 +215,28 @@ static void move(Tile *self, Level *level, int x, int y, int z, bool extending, 
     if (te && te->vtable == get_piston_te_vtable()) {
         // Allow for retraction within a single tick
         MovingPistonTE_place((MovingPistonTE *) te);
+    }
+    // Retract the piston
+    Level_setTileAndData(level, x, y, z, 36, direction);
+    te = make_MovingPistonTE(self->id, direction, direction, false);
+    Level_setTileEntity(level, x, y, z, te);
+    // Retract the block
+    Level_setTileAndData(level, ox, oy, oz, 0, 0);
+    if (((PistonBase *) self)->sticky) {
+        ox += pis_dir[direction][0];
+        oy += pis_dir[direction][1];
+        oz += pis_dir[direction][2];
+        int id = level->vtable->getTile(level, ox, oy, oz);
+        if (pushable(level, ox, oy, oz, id) && id != 0) {
+            int data = level->vtable->getData(level, ox, oy, oz);
+            Level_setTileAndData(level, ox, oy, oz, 0, 0);
+            ox -= pis_dir[direction][0];
+            oy -= pis_dir[direction][1];
+            oz -= pis_dir[direction][2];
+            Level_setTileAndData(level, ox, oy, oz, 36, data);
+            te = make_MovingPistonTE(id, data, direction, false);
+            Level_setTileEntity(level, ox, oy, oz, te);
+        }
     }
 }
 
@@ -388,9 +413,9 @@ static int MovingPiston_use(UNUSED EntityTile *self, Level *level, int x, int y,
     TileEntity *te = Level_getTileEntity(level, x, y, z);
     if (te != NULL) {
         MovingPistonTE_place((MovingPistonTE *) te);
-        return 1;
     }
-    return 0;
+    Level_setTileAndData(level, x, y, z, 0, 0);
+    return 1;
 }
 
 static void make_moving_piston(int id) {
