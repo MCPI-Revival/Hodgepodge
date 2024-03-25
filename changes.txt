@@ -39,6 +39,13 @@
     - I hate graphics code and will never write it again
   - Items on it do not despawn and cannot be picked up
   - Attached items can be picked up by clicking the belt
+- ADDED: Redstone Dust
+  - Don't get your hopes up, it doesn't do much... yet ;)
+  - Dropped by redstone ore
+- ADDED: Piston and sticky piston
+    - Work mostly as expected
+    - Lots of fun stuff can be tweaked in `src/piston.h`
+    - TODO: Fix extended base shape
 - ADDED: Nether Wand
   - TODO: Test in survival
   - Crafted from iron and the nether core
@@ -56,9 +63,6 @@
     - Redstone dust into a thrust crystal
   - Can also be used to turn pigs into pigmen
   - THIS IS TEMPORARY, once these items have a "real" recipe, you won't be able to make them with the wand.
-- ADDED: Redstone Dust
-  - Don't get your hopes up, it doesn't do much... yet ;)
-  - Dropped by redstone ore
 - ADDED: Ender pearls
   - They can be thrown and teleport you
   - No cooldown because that's boring, it does hurt you a little
@@ -69,7 +73,7 @@
   - Can be made with gunpowder and string
   - TODO: Fix entity y vel
   - TODO: Fix y vel after clipping into the world border
-  - ADDED: Thrust Crystal
+- ADDED: Thrust Crystal
   - They boost you in the direction you are looking. Great for horizontal movement!
   - Again, no cool down, but they do hurt you a bit.
   - Can be made by applying a nether wand to redstone

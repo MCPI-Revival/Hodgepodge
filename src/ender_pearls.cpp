@@ -13,7 +13,7 @@ static void EnderPearl_onHit(Throwable *self, UNUSED HitResult *res) {
     // Teleport
     Entity *e = Level_getEntity(self->level, self->thrower_id);
     if (!e) return;
-    Entity_moveTo(e, self->x, self->y, self->z, e->yaw, e->pitch);
+    Entity_moveTo_non_virtual(e, self->x, self->y, self->z, e->yaw, e->pitch);
     e->vtable->hurt(e, NULL, 4);
 }
 

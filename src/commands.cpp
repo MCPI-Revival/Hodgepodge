@@ -236,7 +236,7 @@ HOOK(chat_handle_packet_send, void, (Minecraft *minecraft, ChatPacket *packet)) 
             misc_add_message(&minecraft->gui, "Failed to spawn entity");
             return;
         }
-        Entity_moveTo(entity, pos.x, pos.y, pos.z, 0, 0);
+        Entity_moveTo_non_virtual(entity, pos.x, pos.y, pos.z, 0, 0);
         Level_addEntity(minecraft->level, entity);
     }
 }

@@ -39,7 +39,7 @@ static int Pedestal_use(UNUSED EntityTile *self, Level *level, int x, int y, int
             ItemEntity *item_entity = (ItemEntity *) EntityFactory_CreateEntity(64, level);
             ALLOC_CHECK(item_entity);
             ItemEntity_constructor(item_entity, level, x + 0.5f, y + 1, z + 0.5f, &pedestal_te->item);
-            Entity_moveTo((Entity *) item_entity, x + 0.5f, y + 1, z + 0.5f, 0, 0);
+            Entity_moveTo_non_virtual((Entity *) item_entity, x + 0.5f, y + 1, z + 0.5f, 0, 0);
             Level_addEntity(level, (Entity *) item_entity);
         }
         pedestal_te->item = {0, 0, 0};

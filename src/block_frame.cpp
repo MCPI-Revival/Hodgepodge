@@ -23,7 +23,7 @@ static int BlockFrame_use(UNUSED EntityTile *self, Level *level, int x, int y, i
 }
 
 static int BlockFrame_getRenderShape(UNUSED EntityTile *self) {
-    return /*50 +*/ 0;
+    return /*51 +*/ 0;
 }
 
 static bool BlockFrame_isSolidRender(UNUSED EntityTile *self) {

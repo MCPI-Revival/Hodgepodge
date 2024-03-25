@@ -141,7 +141,7 @@ static int NetherWandItem_useOn(UNUSED Item *self, ItemInstance *item, Player *p
         ItemEntity *item_entity = (ItemEntity *) EntityFactory_CreateEntity(64, level);
         ALLOC_CHECK(item_entity);
         ItemEntity_constructor(item_entity, level, x + 0.5f, y, z + 0.5f, &i);
-        Entity_moveTo((Entity *) item_entity, x + 0.5f, y, z + 0.5f, 0, 0);
+        Entity_moveTo_non_virtual((Entity *) item_entity, x + 0.5f, y, z + 0.5f, 0, 0);
         Level_addEntity(level, (Entity *) item_entity);
         Level_setTileAndData(level, x, y, z, 0, 0);
     }
@@ -155,7 +155,7 @@ static void NetherWandItem_interactEnemy(UNUSED Item *self, UNUSED ItemInstance 
         // Zombify!
         Mob *zombpig = MobFactory_CreateMob(36, mob->level);
         ALLOC_CHECK(zombpig);
-        Entity_moveTo((Entity *) zombpig, mob->x, mob->y, mob->z, mob->yaw, mob->pitch);
+        Entity_moveTo_non_virtual((Entity *) zombpig, mob->x, mob->y, mob->z, mob->yaw, mob->pitch);
         Level_addEntity(mob->level, (Entity *) zombpig);
         mob->vtable->remove(mob);
         // Pop

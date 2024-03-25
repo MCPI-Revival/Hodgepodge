@@ -147,6 +147,35 @@ static void Recipes_injection(Recipes *recipes) {
     line3 = "G  ";
     ingredients = {gunpowder, string};
     Recipes_addShapedRecipe_3(recipes, &bomb_item, &line1, &line2, &line3, &ingredients);
+
+    // Piston
+    RECIPE_ITEM(cobble, 'c', 4, 0);
+    RECIPE_ITEM(planks, 'p', 5, 0);
+    RECIPE_ITEM(redstone, 'r', REDSTONE_ID, 0);
+    ItemInstance piston_item = {
+        .count = 1,
+        .id = 33,
+        .auxiliary = 0
+    };
+    line1 = "ppp";
+    line2 = "cic";
+    line3 = "crc";
+    ingredients = {cobble, planks, redstone, iron};
+    Recipes_addShapedRecipe_3(recipes, &piston_item, &line1, &line2, &line3, &ingredients);
+
+    // Sticky piston
+    RECIPE_ITEM(piston, 'P', 33, 0);
+    RECIPE_ITEM(slime, 's', 341, 0);
+    ItemInstance spiston_item = {
+        .count = 1,
+        .id = 29,
+        .auxiliary = 0
+    };
+    line1 = "   ";
+    line2 = " s ";
+    line3 = " P ";
+    ingredients = {piston, slime};
+    Recipes_addShapedRecipe_3(recipes, &spiston_item, &line1, &line2, &line3, &ingredients);
 }
 
 static void Tile_initTiles_injection(UNUSED void *null) {
@@ -188,6 +217,9 @@ static void Language_injection(__attribute__((unused)) void *null) {
     I18n__strings.insert(std::make_pair("tile.pedestal.name", "Pedestal"));
     // Desc: Just the thing for showing off your rock collection
 
+    I18n__strings.insert(std::make_pair("tile.piston.name", "Piston"));
+    I18n__strings.insert(std::make_pair("tile.pistonSticky.name", "Sticky Piston"));
+
     // Lang fixes that needed changes in tiny.cpp
     I18n__strings.insert(std::make_pair("tile.waterStill.name", "Still Water"));
     I18n__strings.insert(std::make_pair("tile.lavaStill.name", "Still Lava"));
@@ -206,7 +238,7 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     real_title_screen_load_splashes(splashes);
     // Add some cool splashes
     splashes.push_back("Type :music2: in chat!");
-    splashes.push_back("I am the very model of a modern major general");
+    splashes.push_back("The very model of a modern major general");
     splashes.push_back("Good guys, bad guys, and explosions!");
     splashes.push_back("Drinking lava is a feature not a bug");
     splashes.push_back("We *could* have backwards compat :(");
@@ -218,11 +250,11 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     splashes.push_back("Poor wandering one");
     splashes.push_back("NO SOUND AT ALL!");
     splashes.push_back("'I didn't say that!' -TBR");
-    // `\3` is a heart
-    splashes.push_back("I \3 extract_from_bl_instruction");
+    splashes.push_back("I \3 extract_from_bl_instruction"); // `\3` is a heart
     splashes.push_back("Chestnace not included!"); // Or is it...?
     splashes.push_back("Work in progress!");
     splashes.push_back("Gold > Diamond!");
+    splashes.push_back("Emeralds == Diamonds");
 }
 
 __attribute__((constructor)) static void init() {
