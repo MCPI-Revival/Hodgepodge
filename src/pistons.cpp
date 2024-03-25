@@ -686,6 +686,10 @@ static int PistonHead_getResource(UNUSED Tile *tile, UNUSED int data, UNUSED Ran
     return 0;
 }
 
+static bool PistonHead_isCubeShaped(UNUSED Tile *tile) {
+    return false;
+}
+
 static void make_piston_head(int id) {
     // Construct
     piston_head = alloc_Tile();
@@ -704,6 +708,7 @@ static void make_piston_head(int id) {
     piston_head->vtable->neighborChanged = PistonHead_neighborChanged;
     piston_head->vtable->addAABBs = PistonHead_addAABBs;
     piston_head->vtable->getResource = PistonHead_getResource;
+    piston_head->vtable->isCubeShaped = PistonHead_isCubeShaped;
 
     // Init
     Tile_init(piston_head);
