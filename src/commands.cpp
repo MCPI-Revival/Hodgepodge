@@ -5,6 +5,7 @@
 #include <mods/chat/chat.h>
 #include <mods/misc/misc.h>
 
+#include "api.h"
 #include "bomb.h"
 
 std::map<std::string, int> MOB_IDS = {
@@ -120,6 +121,7 @@ static std::map<std::string, std::string> emojis = {
     {"updown", "\22"},
     {"bangbang", "\23"},
     {"pilcrow", "\24"},
+    {"FG6", "our all-powerful leader"},
     {"section", "\25"},
     {"rectangle", "\26"},
     {"updown2", "\27"},

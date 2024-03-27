@@ -58,7 +58,7 @@ static bool BlockFrame_isCubeShaped(UNUSED EntityTile *self) {
 
 void make_frame() {
     // Construct
-    frame = alloc_EntityTile();
+    frame = new EntityTile();
     ALLOC_CHECK(frame);
     int texture = FRAME_TEXTURE;
     Tile_constructor((Tile *) frame, FRAME_TILE_ID, texture, Material_stone);
@@ -107,7 +107,7 @@ static void FrameTileEntity_load(TileEntity *self, CompoundTag *tag) {
 
 static bool FrameTileEntity_save(TileEntity *self, CompoundTag *tag) {
     TileEntity_save_non_virtual(self, tag);
-    CompoundTag *ctag = alloc_CompoundTag();
+    CompoundTag *ctag = new CompoundTag();
     CompoundTag_constructor(ctag, "");
     ItemInstance_save(&((FrameTileEntity *) self)->tile, ctag);
     std::string tile = "Tile";

@@ -80,25 +80,26 @@ static void mcpi_callback(Minecraft *mcpi) {
 
 static void Inventory_setupDefault_FillingContainer_addItem_call_injection(FillingContainer *filling_container) {
     ADD_ITEM(REDSTONE_ID);
+    ADD_ITEM(REPEATER_ID);
     ADD_ITEM(BELT_ID);
     ADD_ITEM(PEDESTAL_ID);
     ADD_ITEM(ENDER_PEARL_ITEM_ID);
     ADD_ITEM(BOMB_ITEM_ID);
     ADD_ITEM(DASH_ITEM_ID);
     ADD_ITEM(NETHER_WAND_ID);
-    ADD_ITEM(FRAME_TILE_ID);
+    //ADD_ITEM(FRAME_TILE_ID);
     // Piston
     ADD_ITEM(33);
     // Sticky piston
     ADD_ITEM(29);
     // Moving piston
-    ADD_ITEM(36);
+    //ADD_ITEM(36);
     // Redstone block
     ADD_ITEM(152);
     // OBBs
-    for (int i = 0; i < 16; i++) {
+    /*for (int i = 0; i < 16; i++) {
         ADD_ITEM_AUX(OBB_ID, i);
-    }
+    }*/
 }
 
 // Recipe
@@ -148,6 +149,20 @@ static void Recipes_injection(Recipes *recipes) {
     ingredients = {gunpowder, string};
     Recipes_addShapedRecipe_3(recipes, &bomb_item, &line1, &line2, &line3, &ingredients);
 
+    // Pedestal
+    // TODO: Recipes for other quartz stuff
+    RECIPE_ITEM(quartz, 'Q', 406, 0);
+    ItemInstance pedestal_item = {
+        .count = 1,
+        .id = PEDESTAL_ID,
+        .auxiliary = 0
+    };
+    line1 = "QQQ";
+    line2 = " Q ";
+    line3 = " Q ";
+    ingredients = {quartz};
+    Recipes_addShapedRecipe_3(recipes, &pedestal_item, &line1, &line2, &line3, &ingredients);
+
     // Piston
     RECIPE_ITEM(cobble, 'c', 4, 0);
     RECIPE_ITEM(planks, 'p', 5, 0);
@@ -185,6 +200,7 @@ static void Tile_initTiles_injection(UNUSED void *null) {
     make_frame();
     make_pistons();
     make_redstone_block();
+    make_redstone_wire();
 }
 
 static void Item_initItems_injection(UNUSED void *null) {
@@ -192,7 +208,7 @@ static void Item_initItems_injection(UNUSED void *null) {
     make_nether_wand();
     make_bomb();
     make_dash();
-    make_redstone();
+    //make_redstone();
 }
 
 static void Language_injection(__attribute__((unused)) void *null) {
@@ -233,6 +249,14 @@ static void Language_injection(__attribute__((unused)) void *null) {
     I18n__strings.insert(std::make_pair("tile.stoneSlab.name", "Double Stone Slab"));
 }
 
+#if !REBORN_HAS_LANG
+I18n_loadLanguage_t I18n_loadLanguage_og = NULL;
+static void I18n_loadLanguage_injection(AppPlatform *app, std::string language_name) {
+    I18n_loadLanguage_og(app, language_name);
+    Language_injection(NULL);
+}
+#endif
+
 HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     ensure_title_screen_load_splashes();
     real_title_screen_load_splashes(splashes);
@@ -264,5 +288,10 @@ __attribute__((constructor)) static void init() {
     misc_run_on_items_setup(Item_initItems_injection);
     misc_run_on_recipes_setup(Recipes_injection);
     misc_run_on_creative_inventory_setup(Inventory_setupDefault_FillingContainer_addItem_call_injection);
+#if REBORN_HAS_LANG
     misc_run_on_language_setup(Language_injection);
+#else
+    I18n_loadLanguage_og = (I18n_loadLanguage_t) extract_from_bl_instruction((uchar *) 0x149f0);
+    overwrite_calls((void *) I18n_loadLanguage_og, (void *) I18n_loadLanguage_injection);
+#endif
 }

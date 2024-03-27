@@ -103,7 +103,7 @@ static ItemInstance *BombItem_use(UNUSED Item *self, ItemInstance *item, Level *
     Level_playSound(level, (Entity *) player, &name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
     // Spawn the entity
-    Throwable *bomb = alloc_Throwable();
+    Throwable *bomb = new Throwable();
     ALLOC_CHECK(bomb);
     Throwable_constructor(bomb, level, (Entity *) player);
     bomb->vtable = get_bomb_vtable();
@@ -130,7 +130,7 @@ static Item_vtable *get_bomb_item_vtable() {
 static Item *bomb = NULL;
 void make_bomb() {
     // Construct
-    bomb = alloc_Item();
+    bomb = new Item();
     ALLOC_CHECK(bomb);
     Item_constructor(bomb, BOMB_ITEM_ID - 256);
 
@@ -149,7 +149,7 @@ void make_bomb() {
 HOOK_FROM_CALL(0x60eb0, EntityRenderDispatcher*, EntityRenderDispatcher_constructor, (EntityRenderDispatcher *self)) {
     EntityRenderDispatcher_constructor_original(self);
 
-    ItemSpriteRenderer *renderer = alloc_ItemSpriteRenderer();
+    ItemSpriteRenderer *renderer = new ItemSpriteRenderer();
     ALLOC_CHECK(renderer);
     ItemSpriteRenderer_constructor(renderer, BOMB_TEXTURE_ID);
     EntityRenderDispatcher_assign(self, BOMB_RENDER_DISPATCHER_ID, (EntityRenderer *) renderer);

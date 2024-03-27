@@ -9,6 +9,13 @@
 - FIX: The crosshair does not render in 3rd person mode
 - FIX: MCPI-Addons (v1.2.4 to v1.2.5) used CreatorLevel instead of ServerLevel, which stops the level from ticking
 - FIX: Camera legs now render properly
+- FIX/QOL: Backwards compat
+  - While the exact symbols are still required to build it, the builds can run on older versions of reborn
+  - A custom symbol-processor is used on the provided builds
+  - A libreborn shim is used for vtable patching
+  - `alloc_*` functions are avoided
+  - `*_non_virtual` are hard-coded (see src/api.h for details)
+  - 'dup_*_vtable' are shimed (see src/api.h for details)
 - QOL: You can get rid of camera with shift-left click
 - QOL: You can adjust cameras by left clicking, and exiting by shifting
   - TODO: Fix "astral projection" bug
@@ -40,12 +47,14 @@
   - Items on it do not despawn and cannot be picked up
   - Attached items can be picked up by clicking the belt
 - ADDED: Redstone Dust
-  - Don't get your hopes up, it doesn't do much... yet ;)
   - Dropped by redstone ore
+  - TODO: Fix updating of nearby dust
+  - TODO: Fix updating of blocks
+  - TODO: Fix texture
 - ADDED: Piston and sticky piston
-    - Work mostly as expected
-    - Lots of fun stuff can be tweaked in `src/piston.h`
-    - TODO: Fix extended base shape
+  - Work mostly as expected
+  - Lots of fun stuff can be tweaked in `src/piston.h`
+  - TODO: Fix extended base shape
 - ADDED: Nether Wand
   - TODO: Test in survival
   - Crafted from iron and the nether core

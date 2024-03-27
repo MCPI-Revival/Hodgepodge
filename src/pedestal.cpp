@@ -68,10 +68,10 @@ static bool Pedestal_isCubeShaped(UNUSED EntityTile *self) {
 
 void make_pedestal() {
     // Construct
-    pedestal = alloc_EntityTile();
+    pedestal = new EntityTile();
     ALLOC_CHECK(pedestal);
     int texture = INVALID_TEXTURE;
-    Tile_constructor((Tile *) pedestal, PEDESTAL_ID, texture, Material_stone);
+    Tile_constructor((Tile *) pedestal, PEDESTAL_ID, texture, Material_glass);
     Tile_isEntityTile[PEDESTAL_ID] = true;
     pedestal->texture = texture;
 
@@ -125,7 +125,7 @@ static void PedestalTileEntity_load(TileEntity *self, CompoundTag *tag) {
 
 static bool PedestalTileEntity_save(TileEntity *self, CompoundTag *tag) {
     TileEntity_save_non_virtual(self, tag);
-    CompoundTag *ctag = alloc_CompoundTag();
+    CompoundTag *ctag = new CompoundTag();
     CompoundTag_constructor(ctag, "");
     ItemInstance_save(&((PedestalTileEntity *) self)->item, ctag);
     std::string item = "Item";

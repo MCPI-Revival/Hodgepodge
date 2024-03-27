@@ -191,7 +191,7 @@ static Item_vtable *get_nether_wand_item_vtable() {
 static Item *nether_wand = NULL;
 void make_nether_wand() {
     // Construct
-    nether_wand = alloc_Item();
+    nether_wand = new Item();
     ALLOC_CHECK(nether_wand);
     Item_constructor(nether_wand, NETHER_WAND_ID - 256);
 

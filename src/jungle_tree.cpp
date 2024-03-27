@@ -1,3 +1,4 @@
+#if 0
 #include <symbols/minecraft.h>
 #include <libreborn/libreborn.h>
 #include <mods/misc/misc.h>
@@ -184,7 +185,7 @@ static void create_vines() {
         Ladder_neighborChanged = vines_vtable->neighborChanged;
         vines_vtable->neighborChanged = Vines_neighborChanged;
     }
-    vines = alloc_Tile();
+    vines = new Tile();
     int texture = VINE_TEXTURE;
     Tile_constructor(vines, VINE_ID, texture, Material_plant);
     vines->vtable = vines_vtable;
@@ -229,3 +230,4 @@ __attribute__((constructor)) static void init() {
 
     misc_run_on_tiles_setup(Tile_initTiles_injection);
 }
+#endif

@@ -131,7 +131,7 @@ __attribute__((constructor)) static void init() {
 // Makes the conveyorbelts
 void make_conveyorbelt() {
     // Construct
-    conveyorbelt = alloc_Tile();
+    conveyorbelt = new Tile();
     ALLOC_CHECK(conveyorbelt);
     int texture = BELT_ITEM_TEXTURE;
     Tile_constructor(conveyorbelt, BELT_ID, texture, Material_metal);

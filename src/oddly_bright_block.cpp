@@ -17,7 +17,7 @@ static int OddlyBrightBlock_getTexture2(UNUSED Tile *tile, int face, int data) {
 
 void make_oddly_bright_blocks() {
     // Construct
-    oddlybrightblock = alloc_Tile();
+    oddlybrightblock = new Tile();
     ALLOC_CHECK(oddlybrightblock);
     int texture = 4 * 16; //OBB_ITEM_TEXTURE;
     Tile_constructor(oddlybrightblock, OBB_ID, texture, Material_metal);

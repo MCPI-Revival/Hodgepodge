@@ -48,7 +48,7 @@ ItemInstance *EnderPearlItem_use(UNUSED Item *self, ItemInstance *item, Level *l
     Level_playSound(level, (Entity *) player, &name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
     // Spawn the entity
-    Throwable *ender_pearl = alloc_Throwable();
+    Throwable *ender_pearl = new Throwable();
     ALLOC_CHECK(ender_pearl);
     Throwable_constructor(ender_pearl, level, (Entity *) player);
     ender_pearl->vtable = get_ender_pearl_vtable();
@@ -75,7 +75,7 @@ static Item_vtable *get_ender_pearl_item_vtable() {
 static Item *ender_pearl = NULL;
 void make_ender_pearl() {
     // Construct
-    ender_pearl = alloc_Item();
+    ender_pearl = new Item();
     ALLOC_CHECK(ender_pearl);
     Item_constructor(ender_pearl, ENDER_PEARL_ITEM_ID - 256);
 
@@ -93,7 +93,7 @@ void make_ender_pearl() {
 HOOK_FROM_CALL(0x60eb0, EntityRenderDispatcher*, EntityRenderDispatcher_constructor, (EntityRenderDispatcher *self)) {
     EntityRenderDispatcher_constructor_original(self);
 
-    ItemSpriteRenderer *renderer = alloc_ItemSpriteRenderer();
+    ItemSpriteRenderer *renderer = new ItemSpriteRenderer();
     ALLOC_CHECK(renderer);
     ItemSpriteRenderer_constructor(renderer, ENDER_PEARL_TEXTURE_ID);
     EntityRenderDispatcher_assign(self, PEARL_RENDER_DISPATCHER_ID, (EntityRenderer *) renderer);

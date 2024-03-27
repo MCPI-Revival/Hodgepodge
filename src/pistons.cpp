@@ -494,7 +494,6 @@ static bool MovingPiston_mayPlace2(UNUSED EntityTile *self, UNUSED Level *level,
 }
 
 static void MovingPiston_onRemove(UNUSED EntityTile *self, Level *level, int x, int y, int z) {
-    // TODO: TileEntityPistonMoving
     TileEntity *te = Level_getTileEntity(level, x, y, z);
     if (te != NULL) {
         MovingPistonTE_place((MovingPistonTE *) te);
@@ -528,7 +527,7 @@ static int MovingPiston_use(UNUSED EntityTile *self, Level *level, int x, int y,
 
 static void make_moving_piston(int id) {
     // TODO: wood sound -> stone
-    piston_moving = alloc_EntityTile();
+    piston_moving = new EntityTile();
     ALLOC_CHECK(piston_moving);
     int texture = INVALID_TEXTURE;
     Tile_constructor((Tile *) piston_moving, id, texture, Material_wood);
@@ -692,7 +691,7 @@ static bool PistonHead_isCubeShaped(UNUSED Tile *tile) {
 
 static void make_piston_head(int id) {
     // Construct
-    piston_head = alloc_Tile();
+    piston_head = new Tile();
     ALLOC_CHECK(piston_head);
     // TODO: Texture
     int texture = 6*16+11;

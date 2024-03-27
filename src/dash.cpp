@@ -51,7 +51,7 @@ static Item_vtable *get_dash_item_vtable() {
 static Item *dash = NULL;
 void make_dash() {
     // Construct
-    dash = alloc_Item();
+    dash = new Item();
     ALLOC_CHECK(dash);
     Item_constructor(dash, DASH_ITEM_ID - 256);
 
