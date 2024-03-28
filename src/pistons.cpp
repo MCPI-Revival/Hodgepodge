@@ -505,7 +505,7 @@ static int MovingPiston_getRenderShape(UNUSED EntityTile *self) {
 }
 
 static bool MovingPiston_isSolidRender(UNUSED EntityTile *self) {
-    return 0;
+    return false;
 }
 
 static int MovingPiston_getRenderLayer(UNUSED EntityTile *self) {

@@ -48,9 +48,6 @@
   - Attached items can be picked up by clicking the belt
 - ADDED: Redstone Dust
   - Dropped by redstone ore
-  - TODO: Fix updating of nearby dust
-  - TODO: Fix updating of blocks
-  - TODO: Fix texture
 - ADDED: Piston and sticky piston
   - Work mostly as expected
   - Lots of fun stuff can be tweaked in `src/piston.h`

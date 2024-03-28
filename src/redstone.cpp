@@ -55,6 +55,9 @@ static bool RedstoneWire_isSolidRender(UNUSED Tile *self) {
 static bool RedstoneWire_isCubeShaped(UNUSED Tile *self) {
     return false;
 }
+static int RedstoneWire_getRenderShape(UNUSED Tile *self) {
+    return 52;
+}
 static bool RedstoneWire_mayPlace2(UNUSED Tile *self, Level *level, int x, int y, int z) {
     return level->vtable->isSolidRenderTile(level, x, y - 1, z);
 }
@@ -180,7 +183,7 @@ static void RedstoneWire_propagate(Level *level, int x, int y, int z) {
     std::vector<Vec3> neighbors = wire_neighbors;
     wire_neighbors = {};
     for (const Vec3 &i : neighbors) {
-        Level_neighborChanged(level, i.x, i.y, i.z, 55);
+        Level_updateNearbyTiles(level, i.x, i.y, i.z, 55);
     }
 }
 
@@ -194,7 +197,39 @@ static void RedstoneWire_neighborChanged(Tile *self, Level *level, int x, int y,
     }
 }
 
-static bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side) {
+static void updateWires(Level *level, int x, int y, int z) {
+    if (level->vtable->getTile(level, x, y, z) != 55) return;
+    Level_updateNearbyTiles(level, x,     y,     z,     55);
+    Level_updateNearbyTiles(level, x - 1, y,     z,     55);
+    Level_updateNearbyTiles(level, x + 1, y,     z,     55);
+    Level_updateNearbyTiles(level, x,     y - 1, z,     55);
+    Level_updateNearbyTiles(level, x,     y + 1, z,     55);
+    Level_updateNearbyTiles(level, x,     y,     z - 1, 55);
+    Level_updateNearbyTiles(level, x,     y,     z + 1, 55);
+}
+
+#define UPDATE_IF_SOLID(x2, y2, z2) \
+    if (level->vtable->isSolidRenderTile(level, (x2), (y2), (z2))) { \
+        updateWires(level, (x2), (y2) + 1, (z2)); \
+    } else { \
+        updateWires(level, (x2), (y2) - 1, (z2)); \
+    }
+void RedstoneWire_onPlaceOrRemove(UNUSED Tile *self, Level *level, int x, int y, int z) {
+    RedstoneWire_propagate(level, x, y, z);
+    Level_updateNearbyTiles(level, x, y + 1, z, 55);
+    Level_updateNearbyTiles(level, x, y - 1, z, 55);
+    updateWires(level, x - 1, y, z);
+    updateWires(level, x + 1, y, z);
+    updateWires(level, x, y, z - 1);
+    updateWires(level, x, y, z + 1);
+    UPDATE_IF_SOLID(x - 1, y, z);
+    UPDATE_IF_SOLID(x + 1, y, z);
+    UPDATE_IF_SOLID(x, y, z - 1);
+    UPDATE_IF_SOLID(x, y, z + 1);
+}
+#undef UPDATE_IF_SOLID
+
+bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side) {
     int id = level->vtable->getTile(level, x, y, z);
     if (id == 55) {
         return true;
@@ -256,6 +291,7 @@ void make_redstone_wire() {
     redstone_wire->vtable->getAABB = RedstoneWire_getAABB;
     redstone_wire->vtable->getSignal2 = RedstoneWire_getSignal2;
     redstone_wire->vtable->getDirectSignal = RedstoneWire_getDirectSignal;
+    redstone_wire->vtable->getRenderShape = RedstoneWire_getRenderShape;
     redstone_wire->vtable->getRenderLayer = RedstoneWire_getRenderLayer;
     redstone_wire->vtable->mayPlace2 = RedstoneWire_mayPlace2;
     redstone_wire->vtable->getColor = RedstoneWire_getColor;
@@ -264,6 +300,8 @@ void make_redstone_wire() {
     redstone_wire->vtable->neighborChanged = RedstoneWire_neighborChanged;
     redstone_wire->vtable->getResource = RedStoneOreTile_getResource_injection;
     redstone_wire->vtable->getResourceCount = RedstoneWire_getResourceCount;
+    redstone_wire->vtable->onPlace = RedstoneWire_onPlaceOrRemove;
+    redstone_wire->vtable->onRemove = RedstoneWire_onPlaceOrRemove;
 
     // Init
     Tile_init(redstone_wire);
@@ -370,7 +408,7 @@ void make_redstone_block() {
     redstone_block = new Tile();
     ALLOC_CHECK(redstone_block);
     int texture = 13+16*7;
-    Tile_constructor(redstone_block, 152, texture, Material_stone);
+    Tile_constructor(redstone_block, 152, texture, Material_glass);
     redstone_block->texture = texture;
 
     // Set VTable

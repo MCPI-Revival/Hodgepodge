@@ -7,6 +7,7 @@
 #include "init.h"
 #include "belt.h"
 #include "piston.h"
+#include "redstone.h"
 #include "rendering.h"
 #include "oddly_bright_block.h"
 #include "block_frame.h"
@@ -287,6 +288,155 @@ static bool TileRenderer_tesselatePedestalInWorld(TileRenderer *self, Tile *tile
     return true;
 }
 
+static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, int y, int z) {
+    // Set color
+    float brightness = tile->vtable->getBrightness(tile, (LevelSource *) self->level, x, y, z);
+    brightness *= 256;
+    float color = tile->vtable->getColor(tile, (LevelSource *) self->level, x, y, z);
+    float r = (((int) color >> 16) & 0xff) / (float) 0xff;
+    float g = (((int) color >> 8) & 0xff) / (float) 0xff;
+    color = ((int) color & 0xff) / (float) 0xff;
+    Tesselator *t = &Tesselator_instance;
+    Tesselator_color(t, brightness * r, brightness * g, brightness * color, 0xff);
+    // Get connectivity
+    bool connected_xm = canWireConnectTo(self->level, x - 1, y, z, 1) || (!self->level->vtable->isSolidRenderTile(self->level, x - 1, y, z) && canWireConnectTo(self->level, x - 1, y - 1, z, -1));
+    bool connected_xp = canWireConnectTo(self->level, x + 1, y, z, 3) || (!self->level->vtable->isSolidRenderTile(self->level, x + 1, y, z) && canWireConnectTo(self->level, x + 1, y - 1, z, -1));
+    bool connected_zm = canWireConnectTo(self->level, x, y, z - 1, 2) || (!self->level->vtable->isSolidRenderTile(self->level, x, y, z - 1) && canWireConnectTo(self->level, x, y - 1, z - 1, -1));
+    bool connected_zp = canWireConnectTo(self->level, x, y, z + 1, 0) || (!self->level->vtable->isSolidRenderTile(self->level, x, y, z + 1) && canWireConnectTo(self->level, x, y - 1, z + 1, -1));
+    if (!self->level->vtable->isSolidRenderTile(self->level, x, y + 1, z)) {
+        if (self->level->vtable->isSolidRenderTile(self->level, x - 1, y, z) && canWireConnectTo(self->level, x - 1, y + 1, z, -1)) {
+            connected_xm = true;
+        }
+        if (self->level->vtable->isSolidRenderTile(self->level, x + 1, y, z) && canWireConnectTo(self->level, x + 1, y + 1, z, -1)) {
+            connected_xp = true;
+        }
+        if (self->level->vtable->isSolidRenderTile(self->level, x, y, z - 1) && canWireConnectTo(self->level, x, y + 1, z - 1, -1)) {
+            connected_zm = true;
+        }
+        if (self->level->vtable->isSolidRenderTile(self->level, x, y, z + 1) && canWireConnectTo(self->level, x, y + 1, z + 1, -1)) {
+            connected_zp = true;
+        }
+    }
+    // Get tessalator x, z
+    float x1 = x, x2 = x + 1;
+    float z1 = z, z2 = z + 1;
+    uchar shape = 0;
+    if ((connected_xm || connected_xp) && !connected_zm && !connected_zp) {
+        // X shape, no Z
+        shape = 1;
+    }
+    if ((connected_zm || connected_zp) && !connected_xp && !connected_xm) {
+        // Z shape, no X
+        shape = 2;
+    }
+    // Get UV
+    float u1 = (REDSTONE_TEXTURE_S4 & 0xf) << 4, v1 = (REDSTONE_TEXTURE_S4 & 0xf0), u2, v2;
+    if (shape != 0) {
+        u1 = (REDSTONE_TEXTURE_S2 & 0xf) << 4; v1 = (REDSTONE_TEXTURE_S2 & 0xf0);
+    }
+    u1 /= 256.f;
+    v1 /= 256.f;
+    u2 = u1 + UV_S;
+    v2 = v1 + UV_S;
+    // Adjust UV and XZ
+    if (shape == 0) {
+        if (connected_xp || connected_zm || connected_zp || connected_xm) {
+            // Move sides in
+            if (!connected_xm) {
+                x1 += 0.3125f;
+                u1 += 0.3125 * UV_S;
+            }
+            if (!connected_xp) {
+                x2 -= 0.3125f;
+                u2 -= 0.3125 * UV_S;
+            }
+            if (!connected_zm) {
+                z1 += 0.3125f;
+                v1 += 0.3125 * UV_S;
+            }
+            if (!connected_zp) {
+                z2 -= 0.3125f;
+                v2 -= 0.3125 * UV_S;
+            }
+        }
+    }
+    // Render
+    if (shape != 2) {
+        // Top
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u2, v2);
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u2, v1);
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u1, v1);
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u1, v2);
+        // Bottom
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u2, v2);
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u2, v1);
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u1, v1);
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u1, v2);
+    } else {
+        // Top
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u2, v2);
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u1, v2);
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u1, v1);
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u2, v1);
+        // Bottom
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u2, v2);
+        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u1, v2);
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u1, v1);
+        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u2, v1);
+    }
+    // Render going up walls
+    if (self->level->vtable->isSolidRenderTile(self->level, x, y + 1, z)) return true;
+    if (shape == 0) {
+        u1 = (REDSTONE_TEXTURE_S2 & 0xf) << 4; v1 = (REDSTONE_TEXTURE_S2 & 0xf0);
+        u1 /= 256.f;
+        v1 /= 256.f;
+        u2 = u1 + UV_S;
+        v2 = v1 + UV_S;
+    }
+    // Xm
+    if (
+        self->level->vtable->isSolidRenderTile(self->level, x - 1, y, z)
+        && self->level->vtable->getTile(self->level, x - 1, y + 1, z) == 55
+    ) {
+        Tesselator_vertexUV(t, x + 0.015625f, y + 1.021875f, z + 1, u2, v1);
+        Tesselator_vertexUV(t, x + 0.015625f, y, z + 1, u1, v1);
+        Tesselator_vertexUV(t, x + 0.015625f, y, z, u1, v2);
+        Tesselator_vertexUV(t, x + 0.015625f, y + 1.021875f, z, u2, v2);
+    }
+    // Xp
+    if (
+        self->level->vtable->isSolidRenderTile(self->level, x + 1, y, z)
+        && self->level->vtable->getTile(self->level, x + 1, y + 1, z) == 55
+    ) {
+        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y, z + 1, u1, v2);
+        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y + 1.021875f, z + 1, u2, v2);
+        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y + 1.021875f, z, u2, v1);
+        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y, z, u1, v1);
+
+    }
+    // Zm
+    if (
+        self->level->vtable->isSolidRenderTile(self->level, x, y, z - 1)
+        && self->level->vtable->getTile(self->level, x, y + 1, z - 1) == 55
+    ) {
+        Tesselator_vertexUV(t, x + 1, y, z + 0.015625f, u1, v2);
+        Tesselator_vertexUV(t, x + 1, y + 1.021875f, z + 0.015625f, u2, v2);
+        Tesselator_vertexUV(t, x, y + 1.021875f, z + 0.015625f, u2, v1);
+        Tesselator_vertexUV(t, x, y, z + 0.015625f, u1, v1);
+    }
+    // Zp
+    if (
+        self->level->vtable->isSolidRenderTile(self->level, x, y, z + 1)
+        && self->level->vtable->getTile(self->level, x, y + 1, z + 1) == 55
+    ) {
+        Tesselator_vertexUV(t, x + 1, y + 1.021875f, (z + 1) - 0.015625f, u2, v1);
+        Tesselator_vertexUV(t, x + 1, y, (z + 1) - 0.015625f, u1, v1);
+        Tesselator_vertexUV(t, x, y, (z + 1) - 0.015625f, u1, v2);
+        Tesselator_vertexUV(t, x, y + 1.021875f, (z + 1) - 0.015625f, u2, v2);
+    }
+    return true;
+}
+
 // Inject
 HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self, Tile *tile, int x, int y, int z)) {
     int shape = tile->vtable->getRenderShape(tile);
@@ -302,6 +452,8 @@ HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self
     } else if (shape == 50) {
         int data = self->level->vtable->getData(self->level, x, y, z);
         return TileRenderer_tesselatePiston(tile, x, y, z, data, mc->level);
+    } else if (shape == 52) {
+        return TileRenderer_tesselateDust(self, tile, x, y, z);
     }
     return TileRenderer_tesselateInWorld_original(self, tile, x, y, z);
 }

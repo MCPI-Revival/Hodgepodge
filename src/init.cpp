@@ -191,6 +191,31 @@ static void Recipes_injection(Recipes *recipes) {
     line3 = " P ";
     ingredients = {piston, slime};
     Recipes_addShapedRecipe_3(recipes, &spiston_item, &line1, &line2, &line3, &ingredients);
+
+    // Redstone
+    RECIPE_ITEM(rblock, 'R', 152, 0);
+    ItemInstance redstone_item = {
+        .count = 9,
+        .id = REDSTONE_ID,
+        .auxiliary = 0
+    };
+    line1 = "R  ";
+    line2 = "   ";
+    line3 = "   ";
+    ingredients = {rblock};
+    Recipes_addShapedRecipe_3(recipes, &redstone_item, &line1, &line2, &line3, &ingredients);
+
+    // Redstone Block
+    ItemInstance rblock_item = {
+        .count = 9,
+        .id = 152,
+        .auxiliary = 0
+    };
+    line1 = "rrr";
+    line2 = "rrr";
+    line3 = "rrr";
+    ingredients = {redstone};
+    Recipes_addShapedRecipe_3(recipes, &rblock_item, &line1, &line2, &line3, &ingredients);
 }
 
 static void Tile_initTiles_injection(UNUSED void *null) {
@@ -235,6 +260,7 @@ static void Language_injection(__attribute__((unused)) void *null) {
 
     I18n__strings.insert(std::make_pair("tile.piston.name", "Piston"));
     I18n__strings.insert(std::make_pair("tile.pistonSticky.name", "Sticky Piston"));
+    I18n__strings.insert(std::make_pair("tile.redstone_block.name", "Redstone Block"));
 
     // Lang fixes that needed changes in tiny.cpp
     I18n__strings.insert(std::make_pair("tile.waterStill.name", "Still Water"));
