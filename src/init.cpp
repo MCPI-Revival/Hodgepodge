@@ -84,8 +84,8 @@ static void mcpi_callback(Minecraft *mcpi) {
 
 static void Inventory_setupDefault_FillingContainer_addItem_call_injection(FillingContainer *filling_container) {
     ADD_ITEM(REDSTONE_ID);
-    ADD_ITEM(75);
-    ADD_ITEM(REPEATER_ID);
+    //ADD_ITEM(75);
+    //ADD_ITEM(REPEATER_ID);
     ADD_ITEM(BELT_ID);
     ADD_ITEM(PEDESTAL_ID);
     ADD_ITEM(ENDER_PEARL_ITEM_ID);
