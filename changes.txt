@@ -32,7 +32,7 @@
   - Cows and sheep like wheat
   - Chickens like seeds
   - Pigs like a lot of non-meat food, including mushrooms
-  - TODO: Breeding?
+  - TODO: Breeding
 - QOL: Double doors
   - Doors that are next to each other will open and close together
 - QOL: Removed signs text loading limit
@@ -55,7 +55,6 @@
   - I hate graphics code and will never write it again
   - TODO: Fix extended base shape
 - ADDED: Nether Wand
-  - TODO: Test in survival
   - Crafted from iron and the nether core
   - Can be used to transform blocks and items into other blocks and items
     - Cobble into netherack
@@ -91,9 +90,3 @@
   - Spinny!
   - You can put items on and off of them
   - Spinning is synced across all pedestals
-- ADDED: Block Frames
-  - Almost any block can be a slab, stair, fence, or gate!
-  - So far just bottom slabs
-  - TODO: Other states
-  - TODO: Fix updating
-  - TODO: mekanic wrench
