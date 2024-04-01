@@ -8,10 +8,10 @@ OBJ = ${patsubst ./src/%.cpp,build/%.o,${SRC}}
 
 all: build
 build: $(OBJ)
-	$(CC) $(LD_FLAGS) $(OBJ) -o libNOLEAKING.so
+	$(CC) $(LD_FLAGS) $(OBJ) -o libredstone.so
 
 build/%.o: ./src/%.cpp
-	$(CC) -D__FILE__="\"libNOLEAKING.so:$<\"" -Wno-builtin-macro-redefined $(CPP_FLAGS) -c $< -o $@
+	$(CC) -D__FILE__="\"libredstone.so:$<\"" -Wno-builtin-macro-redefined $(CPP_FLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) libNOLEAKING.so
+	rm -f $(OBJ) libredstone.so
