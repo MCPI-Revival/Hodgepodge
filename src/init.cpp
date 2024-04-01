@@ -20,6 +20,10 @@
 //#include "inventory.h"
 #include "oddly_bright_block.h"
 
+#ifdef FISH
+#include <mods/compat/compat.h>
+#endif
+
 Minecraft *mc = NULL;
 
 // Tick speed stuff
@@ -80,6 +84,7 @@ static void mcpi_callback(Minecraft *mcpi) {
 
 static void Inventory_setupDefault_FillingContainer_addItem_call_injection(FillingContainer *filling_container) {
     ADD_ITEM(REDSTONE_ID);
+    ADD_ITEM(75);
     ADD_ITEM(REPEATER_ID);
     ADD_ITEM(BELT_ID);
     ADD_ITEM(PEDESTAL_ID);
@@ -224,7 +229,7 @@ static void Tile_initTiles_injection(UNUSED void *null) {
     make_pedestal();
     make_frame();
     make_pistons();
-    make_redstone_block();
+    make_redstone_blocks();
     make_redstone_wire();
 }
 
@@ -307,6 +312,49 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     splashes.push_back("Emeralds == Diamonds");
 }
 
+#ifdef FISH
+static bool shown_screen = false;
+static int license_check_thing() {
+    if (/*!is_fish() ||*/ shown_screen) return 0;
+    shown_screen = true;
+    return 2;
+}
+
+static bool license_add_button() {
+    return true;
+}
+
+static void restore_screen() {
+    Minecraft_setScreen(mc, NULL);
+}
+
+static void InvalidLicenseScreen_init_injection(Screen *s) {
+    typedef void (*InvalidLicenseScreen_init_t)(Screen *s);
+    InvalidLicenseScreen_init_t InvalidLicenseScreen_init_og = (InvalidLicenseScreen_init_t) 0x39ff4;
+    InvalidLicenseScreen_init_og(s);
+    // Modify
+    uchar *self = (uchar *) s;
+    (*(Button **) (self + 0x5c))->text = "I want it to be real!";
+}
+
+static void line1_inj(std::string *s) {
+    *s = "April Fools! :D";
+}
+
+static void line2_inj(std::string *s) {
+    *s = "Did I trick you?";
+}
+
+static void line3_inj(std::string *s) {
+    *s =
+        "     Redstone would be very hard to port,\n"
+        "only someone very smart (and good looking)\n"
+        "                    could do it!";
+}
+
+static void nop(){}
+#endif
+
 __attribute__((constructor)) static void init() {
     //overwrite_calls((void *) 0x17e08, (void *) Timer_advanceTime_injection);
     misc_run_on_update(mcpi_callback);
@@ -319,5 +367,20 @@ __attribute__((constructor)) static void init() {
 #else
     I18n_loadLanguage_og = (I18n_loadLanguage_t) extract_from_bl_instruction((uchar *) 0x149f0);
     overwrite_calls((void *) I18n_loadLanguage_og, (void *) I18n_loadLanguage_injection);
+#endif
+
+#ifdef FISH
+    overwrite_calls((void *) 0x16e8c, (void *) license_check_thing);
+    overwrite_call((void *) 0x39c38, (void *) license_add_button);
+    overwrite_call((void *) 0x3e9cc, (void *) license_add_button);
+    overwrite_call((void *) 0x39f10, (void *) compat_request_exit);
+    overwrite_call((void *) 0x39f40, (void *) restore_screen);
+    overwrite_calls((void *) 0x39ff4, (void *) InvalidLicenseScreen_init_injection)
+    overwrite_call((void *) 0x3a140, (void *) nop);
+    overwrite_call((void *) 0x3a14c, (void *) nop);
+    overwrite_call((void *) 0x3a174, (void *) nop);
+    overwrite_call((void *) 0x3a134, (void *) line1_inj);
+    overwrite_call((void *) 0x3a15c, (void *) line2_inj);
+    overwrite_call((void *) 0x3a168, (void *) line3_inj);
 #endif
 }

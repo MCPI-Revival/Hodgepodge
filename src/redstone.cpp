@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
@@ -12,6 +14,7 @@ static Item *repeater_item = NULL;
 static Tile *inactive_repeater = NULL;
 static Tile *active_repeater = NULL;
 static Tile *redstone_block = NULL;
+static Tile *redstone_torch = NULL;
 
 int RedStoneOreTile_getResource_injection(UNUSED Tile *t, UNUSED int data, UNUSED Random *random) {
     return REDSTONE_ID;
@@ -288,15 +291,15 @@ void make_redstone_wire() {
     ALLOC_CHECK(redstone_wire->vtable);
     redstone_wire->vtable->isSignalSource = RedstoneWire_isSignalSource;
     //redstone_wire->vtable->getSignal = RedstoneWire_getSignal;
-    redstone_wire->vtable->getAABB = RedstoneWire_getAABB;
     redstone_wire->vtable->getSignal2 = RedstoneWire_getSignal2;
     redstone_wire->vtable->getDirectSignal = RedstoneWire_getDirectSignal;
+    redstone_wire->vtable->getAABB = RedstoneWire_getAABB;
     redstone_wire->vtable->getRenderShape = RedstoneWire_getRenderShape;
     redstone_wire->vtable->getRenderLayer = RedstoneWire_getRenderLayer;
-    redstone_wire->vtable->mayPlace2 = RedstoneWire_mayPlace2;
-    redstone_wire->vtable->getColor = RedstoneWire_getColor;
     redstone_wire->vtable->isCubeShaped = RedstoneWire_isCubeShaped;
     redstone_wire->vtable->isSolidRender = RedstoneWire_isSolidRender;
+    redstone_wire->vtable->mayPlace2 = RedstoneWire_mayPlace2;
+    redstone_wire->vtable->getColor = RedstoneWire_getColor;
     redstone_wire->vtable->neighborChanged = RedstoneWire_neighborChanged;
     redstone_wire->vtable->getResource = RedStoneOreTile_getResource_injection;
     redstone_wire->vtable->getResourceCount = RedstoneWire_getResourceCount;
@@ -403,11 +406,12 @@ static bool RedstoneBlock_getSignal2(UNUSED Tile *self, UNUSED LevelSource *leve
     return true;
 }
 
-void make_redstone_block() {
+void make_redstone_torch();
+void make_redstone_blocks() {
     // Redstone blocks
     redstone_block = new Tile();
     ALLOC_CHECK(redstone_block);
-    int texture = 13+16*7;
+    int texture = 173;
     Tile_constructor(redstone_block, 152, texture, Material_glass);
     redstone_block->texture = texture;
 
@@ -426,6 +430,145 @@ void make_redstone_block() {
     redstone_block->category = 4;
     std::string name = "redstone_block";
     redstone_block->vtable->setDescriptionId(redstone_block, &name);
+
+    // Blocks with redstone
+    make_redstone_torch();
+}
+
+static int RedstoneTorch_getRenderShape(UNUSED Tile *self) {
+    return 2;
+}
+
+static bool RedstoneTorch_getSignal2(UNUSED Tile *self, LevelSource *level, int x, int y, int z, int side) {
+    int data = level->vtable->getData(level, x, y, z);
+    // Inactive torch
+    if (data & 0b1000) return false;
+    // Check side
+    if (data == 6 - side) return false;
+    return true;
+}
+
+static bool RedstoneTorch_getDirectSignal(Tile *self, Level *level, int x, int y, int z, int direction) {
+    return direction ? false : RedstoneTorch_getSignal2(self, (LevelSource *) level, x, y, z, direction);
+}
+
+
+struct TorchInfo {
+    int x, y, z;
+    int time;
+};
+
+#if 0
+static std::vector<TorchInfo>
+static void RedstoneTorch_tick(Tile *self, Level *level, int x, int y, int z) {
+    // Remove from list
+    int time = level->levelData->time;
+    while (torchUpdates.size() > 0 && time - torchUpdate.at(0).time > 10) {
+        torchUpdates.remove(0);
+    }
+#else
+static void RedstoneTorch_tick(Tile *self, Level *level, int x, int y, int z) {
+#endif
+    // Check if powered
+    int data = level->vtable->getData(level, x, y, z);
+    data &= 0b0111;
+    int dm6x = (6 - data) ^ 1;
+    bool powered = (data == 1 && Level_getSignal(level, x - 1, y, z, dm6x))
+        || (data == 2 && Level_getSignal(level, x + 1, y, z, dm6x))
+        || (data == 3 && Level_getSignal(level, x, y, z - 1, dm6x))
+        || (data == 4 && Level_getSignal(level, x, y, z + 1, dm6x))
+        || (data == 5 && Level_getSignal(level, x, y - 1, z, dm6x));
+    // Set data
+    data |= powered << 3;
+    if (level->vtable->getData(level, x, y, z) != data) {
+        Level_setTileAndData(level, x, y, z, self->id, data);
+    }
+}
+
+static void RedstoneTorch_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
+    Level_addToTickNextTick(level, x, y, z, self->id, 20);
+}
+
+void RedstoneTorch_onPlaceOrRemove(Tile *self, Level *level, int x, int y, int z) {
+    int data = level->vtable->getData(level, x, y, z);
+    data &= 0b1000;
+    if (!data) return;
+    Level_updateNearbyTiles(level, x, y - 1, z, self->id);
+    Level_updateNearbyTiles(level, x, y + 1, z, self->id);
+    Level_updateNearbyTiles(level, x - 1, y, z, self->id);
+    Level_updateNearbyTiles(level, x + 1, y, z, self->id);
+    Level_updateNearbyTiles(level, x, y, z - 1, self->id);
+    Level_updateNearbyTiles(level, x, y, z + 1, self->id);
+}
+
+static void RedstoneTorch_setPlacedBy(UNUSED Tile *self, Level *level, int x, int y, int z, Mob *placer) {
+    int face = (int) std::floor((placer->yaw * 4.0) / 360.0 + 0.5) & 3;
+    if (face == 0) {
+        face = 2;
+    } else if (face == 1) {
+        face = 5;
+    } else if (face == 2) {
+        face = 3;
+    } else if (face == 3) {
+        face = 4;
+    }
+    if (placer->pitch < -55) face = 1;
+    Level_setData(level, x, y, z, face);
+}
+
+int RedstoneTorch_getTexture1(UNUSED Tile *self) {
+    return 3+16*6;
+}
+
+int RedstoneTorch_getTexture2(UNUSED Tile *self, UNUSED int face, int data) {
+    // Shape 2 doesn't respect this, BECAUSE IT IS STUPID so I have to do something
+    if (data & 0b1000) return 3+16*7;
+    return 3+16*6;
+}
+
+int RedstoneTorch_getTexture3(Tile *self, LevelSource *level, int x, int y, int z, int face) {
+    return RedstoneTorch_getTexture2(self, face, level->vtable->getData(level, x, y, z));
+}
+
+void make_redstone_torch() {
+    // Redstone blocks
+    redstone_torch = new Tile();
+    ALLOC_CHECK(redstone_torch);
+    int texture = 3+16*7;
+    Tile_constructor(redstone_torch, 75, texture, Material_wood);
+    redstone_torch->texture = texture;
+
+    // Set VTable
+    redstone_torch->vtable = dup_Tile_vtable(Tile_vtable_base);
+    ALLOC_CHECK(redstone_torch->vtable);
+    // Boilerplate stolen from other tiles
+    redstone_torch->vtable->isSignalSource = RedstoneBlock_isSignalSource;
+    redstone_torch->vtable->getAABB = RedstoneWire_getAABB;
+    redstone_torch->vtable->getRenderShape = RedstoneWire_getRenderShape;
+    redstone_torch->vtable->getRenderLayer = RedstoneWire_getRenderLayer;
+    redstone_torch->vtable->isCubeShaped = RedstoneWire_isCubeShaped;
+    redstone_torch->vtable->isSolidRender = RedstoneWire_isSolidRender;
+    // New!
+    redstone_torch->vtable->getRenderShape = RedstoneTorch_getRenderShape;
+    redstone_torch->vtable->getTexture1 = RedstoneTorch_getTexture1;
+    redstone_torch->vtable->getTexture2 = RedstoneTorch_getTexture2;
+    redstone_torch->vtable->getTexture3 = RedstoneTorch_getTexture3;
+    redstone_torch->vtable->getSignal2 = RedstoneTorch_getSignal2;
+    redstone_torch->vtable->getDirectSignal = RedstoneTorch_getDirectSignal;
+    redstone_torch->vtable->tick = RedstoneTorch_tick;
+    redstone_torch->vtable->setPlacedBy = RedstoneTorch_setPlacedBy;
+    redstone_torch->vtable->neighborChanged = RedstoneTorch_neighborChanged;
+    redstone_torch->vtable->onPlace = RedstoneTorch_onPlaceOrRemove;
+    redstone_torch->vtable->onRemove = RedstoneTorch_onPlaceOrRemove;
+
+    // Init
+    Tile_init(redstone_torch);
+    redstone_torch->vtable->setDestroyTime(redstone_torch, 0.0f);
+    redstone_torch->vtable->setExplodeable(redstone_torch, 0.0f);
+    redstone_torch->category = 4;
+    std::string name = "redstone_torch";
+    redstone_torch->vtable->setDescriptionId(redstone_torch, &name);
+
 }
 
 bool Level_getSignal_isSolidBlockingTile_injection(Level *level, int x, int y, int z) {
@@ -440,4 +583,6 @@ __attribute__((constructor)) static void init() {
     patch_address((void *) 0x113a38, (void *) RedStoneOreTile_getResource_injection);
     // Fix redstone blocks providing signals
     overwrite_call((void *) 0xa5e8c, (void *) Level_getSignal_isSolidBlockingTile_injection);
+    // Fix shape 2 being stupid
+    //overwrite_call((void *) 0x54660);
 }

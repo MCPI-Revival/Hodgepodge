@@ -48,9 +48,11 @@
   - Attached items can be picked up by clicking the belt
 - ADDED: Redstone Dust
   - Dropped by redstone ore
+  - Can be placed!
 - ADDED: Piston and sticky piston
   - Work mostly as expected
   - Lots of fun stuff can be tweaked in `src/piston.h`
+  - I hate graphics code and will never write it again
   - TODO: Fix extended base shape
 - ADDED: Nether Wand
   - TODO: Test in survival

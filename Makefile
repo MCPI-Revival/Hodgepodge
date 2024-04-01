@@ -1,6 +1,6 @@
 INCLUDES = -isystem ~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/include/libreborn -isystem ~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/include/symbols -isystem ~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/include/mods -isystem ~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/include/media-layer
 CPP_FLAGS = -g -shared -fPIC -std=c++17 -Wall -Wextra -DREBORN_HAS_PATCH_CODE -D_GLIBCXX_USE_CXX11_ABI=0 $(INCLUDES)
-LD_FLAGS = -shared -fPIC -Wl,-rpath,~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/lib ~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/lib/lib*.so
+LD_FLAGS = -shared -g -fPIC -Wl,-rpath,~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/lib ~/.minecraft-pi/sdk/lib/minecraft-pi-reborn-client/sdk/lib/lib*.so
 CC = arm-linux-gnueabihf-g++
 
 SRC = ${wildcard ./src/*.cpp}

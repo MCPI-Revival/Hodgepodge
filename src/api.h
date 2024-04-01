@@ -81,15 +81,21 @@ e = """
 ...
 """
 i=e.splitlines()
-i=[j.replace('_non_virtual', '') for j in i if j != '']
+i=[j.replace('_non_virtual', '').replace('_vtable', '').replace('dup_', '') for j in i if j != '']
 for j in i:
-    print(f'#define dup_{j}_vtable(vtable) ([]()->{j}_vtable*{{{j}_vtable*obj=new {j}_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof({j}_vtable));return obj;}}())')
+    print(f'#define dup_{j}_vtable(vtable) ({{{j}_vtable*obj=new {j}_vtable;memcpy((void*)obj,(void*)vtable,sizeof({j}_vtable));obj;}})')
 */
-#define dup_EntityTile_vtable(vtable) ([]()->EntityTile_vtable*{EntityTile_vtable*obj=new EntityTile_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(EntityTile_vtable));return obj;}())
-#define dup_Item_vtable(vtable) ([]()->Item_vtable*{Item_vtable*obj=new Item_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(Item_vtable));return obj;}())
-#define dup_Throwable_vtable(vtable) ([]()->Throwable_vtable*{Throwable_vtable*obj=new Throwable_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(Throwable_vtable));return obj;}())
-#define dup_Tile_vtable(vtable) ([]()->Tile_vtable*{Tile_vtable*obj=new Tile_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(Tile_vtable));return obj;}())
-#define dup_DynamicTexture_vtable(vtable) ([]()->DynamicTexture_vtable*{DynamicTexture_vtable*obj=new DynamicTexture_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(DynamicTexture_vtable));return obj;}())
-#define dup_Feature_vtable(vtable) ([]()->Feature_vtable*{Feature_vtable*obj=new Feature_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(Feature_vtable));return obj;}())
-#define dup_TileEntity_vtable(vtable) ([]()->TileEntity_vtable*{TileEntity_vtable*obj=new TileEntity_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(TileEntity_vtable));return obj;}())
-#define dup_TileEntityRenderer_vtable(vtable) ([]()->TileEntityRenderer_vtable*{TileEntityRenderer_vtable*obj=new TileEntityRenderer_vtable;if(obj==NULL)return NULL;memcpy((void*)obj,(void*)vtable,sizeof(TileEntityRenderer_vtable));return obj;}())
+#define dup_EntityTile_vtable(vtable) ({EntityTile_vtable*obj=new EntityTile_vtable;memcpy((void*)obj,(void*)vtable,sizeof(EntityTile_vtable));obj;})
+#define dup_Item_vtable(vtable) ({Item_vtable*obj=new Item_vtable;memcpy((void*)obj,(void*)vtable,sizeof(Item_vtable));obj;})
+#define dup_Throwable_vtable(vtable) ({Throwable_vtable*obj=new Throwable_vtable;memcpy((void*)obj,(void*)vtable,sizeof(Throwable_vtable));obj;})
+#define dup_Tile_vtable(vtable) ({Tile_vtable*obj=new Tile_vtable;memcpy((void*)obj,(void*)vtable,sizeof(Tile_vtable));obj;})
+#define dup_DynamicTexture_vtable(vtable) ({DynamicTexture_vtable*obj=new DynamicTexture_vtable;memcpy((void*)obj,(void*)vtable,sizeof(DynamicTexture_vtable));obj;})
+#define dup_Feature_vtable(vtable) ({Feature_vtable*obj=new Feature_vtable;memcpy((void*)obj,(void*)vtable,sizeof(Feature_vtable));obj;})
+#define dup_TileEntity_vtable(vtable) ({TileEntity_vtable*obj=new TileEntity_vtable;memcpy((void*)obj,(void*)vtable,sizeof(TileEntity_vtable));obj;})
+#define dup_TileEntityRenderer_vtable(vtable) ({TileEntityRenderer_vtable*obj=new TileEntityRenderer_vtable;memcpy((void*)obj,(void*)vtable,sizeof(TileEntityRenderer_vtable));obj;})
+
+#define FISH
+#ifdef FISH
+// The most important function
+bool is_fish();
+#endif
