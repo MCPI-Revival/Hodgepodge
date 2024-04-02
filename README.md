@@ -13,6 +13,10 @@ Currently this mod works with both Reborn 2.5.3 and 3.0.0. **MCPI++ currently do
 - Put `assets/items.png` in `~/.minecraft-pi/overrides/images/gui/` (or `~/.var/app/com.thebrokenrail.MCPIReborn/.minecraft-pi/overrides/images/gui/` if you use the flatpak)
 - Done! If you run Reborn it should work, if not save the crash log and upload it in github issues or on the discord.
 
+## Building
+
+Run `make`, after running latest (and I mean latest, not latest release, absolute [latest build](https://gitea.thebrokenrail.com/minecraft-pi-reborn/minecraft-pi-reborn/actions)), you don't actually have to run it using `--copy-sdk` works fine as well. Using the Flatpak's symbols isn't supported because it is too slow to update, but if you insist just change all `~` to `~/.var/app/com.thebrokenrail.MCPIReborn/` in the makefile.
+
 ## Contributing
 
 ### Assets
