@@ -583,9 +583,14 @@ static void PistonHead_neighborChanged(UNUSED Tile *self, Level *level, int x, i
     int zo = z - pis_dir[dir][2];
     int id = level->vtable->getTile(level, xo, yo, zo);
     int data = level->vtable->getData(level, xo, yo, zo);
-    if (id != sticky_piston_base->id && id != piston_base->id && data != (dir | 8)) {
+    if ((id != sticky_piston_base->id && id != piston_base->id) || data != (dir | 8)) {
         Level_setTile(level, x, y, z, 0);
     }
+}
+
+static void PistonHead_onPlace(Tile *self, Level *level, int x, int y, int z) {
+    // Check
+    PistonHead_neighborChanged(self, level, x, y, z, -1);
 }
 
 static int PistonHead_getTexture2(UNUSED Tile *t, UNUSED int face, int data) {
@@ -703,6 +708,7 @@ static void make_piston_head(int id) {
     ALLOC_CHECK(piston_head->vtable);
     piston_head->vtable->isSolidRender = PistonBase_isSolidRender;
     piston_head->vtable->onRemove = PistonHead_onRemove;
+    piston_head->vtable->onPlace = PistonHead_onPlace;
     piston_head->vtable->getTexture2 = PistonHead_getTexture2;
     piston_head->vtable->neighborChanged = PistonHead_neighborChanged;
     piston_head->vtable->addAABBs = PistonHead_addAABBs;

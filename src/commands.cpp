@@ -150,7 +150,7 @@ static void replace_mojis(std::string &text) {
 
 // The Actual Mod
 HOOK(chat_handle_packet_send, void, (Minecraft *minecraft, ChatPacket *packet)) {
-    if (packet->message.c_str()[0] != '/' || packet->message.c_str()[1] == '/') {
+    if (packet->message.c_str()[0] != '/' || packet->message.c_str()[1] == '/' || minecraft->level->is_client_side) {
         replace_mojis(packet->message);
         ensure_chat_handle_packet_send();
         real_chat_handle_packet_send(minecraft, packet);
