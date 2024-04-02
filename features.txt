@@ -24,10 +24,7 @@
   - Furnaces make normal coal
   - Old charcoal can be stacked with coal to turn it into coal
 - QOL: You can swing through non-solid blocks with a sword
-  - This incudes: grass, flowers, signs, torches, and cobwebs
-- QOL: Added apple skin like overlay
-  - This was merged with Reborn, so isn't included
-  - "Oh neat!" and "Overall, looks good!" from TBR made my day :)
+  - This incudes: grass, flowers, signs, torches, cobwebs, and redstone
 - QOL: Animal followimg
   - Cows and sheep like wheat
   - Chickens like seeds
@@ -40,6 +37,16 @@
 - QOL/ADDED: Defusing TNT
   - TNT can be defused with shears
   - Be careful! Once defused, the TNT will ignite when broken
+- ADDED: Commands
+  - `/gamemode`
+  - `/clear`
+  - `/kill`
+  - `/kill_items`
+  - TODO: Documentation and `/help`
+  - TODO: Client side commands that can be ran on servers
+  - TODO: Refactor
+- ADDED: Chat emojis
+  - TODO: Documentation and `/mojis`
 - ADDED: Conveyor Belts
   - They move entitys in the direction they are facing
   - Snazy animated texture!
@@ -49,6 +56,7 @@
 - ADDED: Redstone Dust
   - Dropped by redstone ore
   - Can be placed!
+  - TODO: Demojank the autojump code
 - ADDED: Piston and sticky piston
   - Work mostly as expected
   - Lots of fun stuff can be tweaked in `src/piston.h`
@@ -84,6 +92,10 @@
   - They boost you in the direction you are looking. Great for horizontal movement!
   - Again, no cool down, but they do hurt you a bit.
   - Can be made by applying a nether wand to redstone
+- ADDED: Shovel wacking
+  - You can wack things with shovels!
+  - Mobs are wacked in the direction you are moving
+  - The power of the wack is calculated from your speed and the shovels speed
 - ADDED: Pedestals
   - TODO: Fix item angles for most thing
   - TODO: Fix item drops on break

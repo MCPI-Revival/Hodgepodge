@@ -1,0 +1,11 @@
+0.1.1:
+- Fix 1-tick pistons
+- Implement repeaters (no rendering however)
+- Disable le poisson
+- First public source release
+- Fixed buckets no longer clipping (bug with sword swing through)
+- Fixed lava texture no longer being animated (bug with conveyor rendering)
+
+0.1.0:
+- April fools!
+- First public release

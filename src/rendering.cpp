@@ -539,7 +539,7 @@ static DynamicTexture *create_belt_texture() {
 }
 
 HOOK_FROM_CALL(0x170b4, void, Textures_addDynamicTexture, (Textures *self, DynamicTexture *tex)) {
-    Textures_addDynamicTexture(self, tex);
+    Textures_addDynamicTexture_original(self, tex);
 
     static bool ran = false;
     if (!ran) {

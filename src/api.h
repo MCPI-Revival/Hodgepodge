@@ -94,7 +94,7 @@ for j in i:
 #define dup_TileEntity_vtable(vtable) ({TileEntity_vtable*obj=new TileEntity_vtable;memcpy((void*)obj,(void*)vtable,sizeof(TileEntity_vtable));obj;})
 #define dup_TileEntityRenderer_vtable(vtable) ({TileEntityRenderer_vtable*obj=new TileEntityRenderer_vtable;memcpy((void*)obj,(void*)vtable,sizeof(TileEntityRenderer_vtable));obj;})
 
-#define FISH
+//#define FISH
 #ifdef FISH
 // The most important function
 bool is_fish();

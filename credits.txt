@@ -1,0 +1,6 @@
+Bigjango13 (FG6): Lead Developer
+Red-exe-Engineer (Wallee): Testing, misc
+Nobody5050 (Nobody6502): Misc
+NikZapp: Testing, help with rendering code for the inventory
+TheBrokenRail: vast majority of the libreborn-shim, MCPI-Reborn itself
+Mojang: minecraft-pi itself (please don't sue me)

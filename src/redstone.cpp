@@ -218,9 +218,9 @@ static void updateWires(Level *level, int x, int y, int z) {
         updateWires(level, (x2), (y2) - 1, (z2)); \
     }
 void RedstoneWire_onPlaceOrRemove(UNUSED Tile *self, Level *level, int x, int y, int z) {
-    RedstoneWire_propagate(level, x, y, z);
     Level_updateNearbyTiles(level, x, y + 1, z, 55);
     Level_updateNearbyTiles(level, x, y - 1, z, 55);
+    RedstoneWire_propagate(level, x, y, z);
     updateWires(level, x - 1, y, z);
     updateWires(level, x + 1, y, z);
     updateWires(level, x, y, z - 1);
@@ -242,9 +242,8 @@ bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side) {
         return true;
     } else if (id == inactive_repeater->id || id == active_repeater->id) {
         // Yessir, another special case!
-        // Untested, as repeaters don't work yet
-        int dir = level->vtable->getData(level, x, y, z);
-        return dir == side || dir == (side ^ 1);
+        int dir = level->vtable->getData(level, x, y, z) & 0b0011;
+        return (dir ^ 2) == side;
     }
     return false;
 }
@@ -335,14 +334,6 @@ static bool Repeater_mayPlace2(UNUSED Tile *self, Level *level, int x, int y, in
     return level->vtable->isSolidRenderTile(level, x, y - 1, z);
 }
 
-static void Repeater_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
-    if (!Repeater_mayPlace2(self, level, x, y, z)) {
-        Level_setTile(level, x, y, z, 0);
-        // TODO drop on ground
-        return;
-    }
-}
-
 static bool ActiveRepeater_getSignal2(UNUSED Tile *self, LevelSource *level, int x, int y, int z, int side) {
     int dir = level->vtable->getData(level, x, y, z) & 0b0011;
     return (dir == 0 && side == 3)
@@ -350,6 +341,98 @@ static bool ActiveRepeater_getSignal2(UNUSED Tile *self, LevelSource *level, int
         || (dir == 2 && side == 2)
         || (dir == 3 && side == 5);
 }
+
+static bool ActiveRepeater_getDirectSignal(Tile *self, Level *level, int x, int y, int z, int direction) {
+    return ActiveRepeater_getSignal2(self, (LevelSource *) level, x, y, z, direction);
+}
+
+static bool Repeater_checkPower(Level *level, int x, int y, int z, int data = -1) {
+    if (data == -1) data = level->vtable->getData(level, x, y, z);
+    data &= 0b11;
+    static constexpr int oxzs[][3] = {
+        {0, 1, 3},
+        {-1, 0, 4},
+        {0, -1, 2},
+        {1, 0, 5}
+    };
+    x += oxzs[data][0];
+    z += oxzs[data][1];
+    if (Level_getSignal(level, x, y, z, oxzs[data][2])) {
+        return true;
+    }
+    return level->vtable->getTile(level, x, y, z) == 55 && level->vtable->getData(level, x, y, z);
+}
+
+static void Repeater_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
+    if (!Repeater_mayPlace2(self, level, x, y, z)) {
+        Level_setTile(level, x, y, z, 0);
+        // TODO drop on ground
+        return;
+    }
+    // Delay
+    int data = level->vtable->getData(level, x, y, z);
+    bool is_power = self->id == active_repeater->id;
+    bool may_power = Repeater_checkPower(level, x, y, z, data);
+    if (is_power != may_power) {
+        int delay = (data & 0b1100) >> 1;
+        Level_addToTickNextTick(level, x, y, z, self->id, delay + 2);
+    }
+}
+
+static void Repeater_tick(Tile *self, Level *level, int x, int y, int z) {
+    int data = level->vtable->getData(level, x, y, z);
+    bool is_power = self->id == active_repeater->id;
+    bool may_power = Repeater_checkPower(level, x, y, z, data);
+    if (is_power && !may_power) {
+        Level_setTileAndData(level, x, y, z, inactive_repeater->id, data);
+    } else if (!is_power) {
+        Level_setTileAndData(level, x, y, z, active_repeater->id, data);
+        // Just because it isn't powered doesn't mean it wasn't
+        // and if it was then it should, because then it is.
+        // Then this makes it that it is, so then later check
+        // the should and is, if not it can always be turned off
+        if (!may_power) {
+            int delay = (data & 0b1100) >> 1;
+            Level_addToTickNextTick(level, x, y, z, active_repeater->id, delay + 2);
+        }
+    }
+}
+
+static void Repeater_onPlace(Tile *self, Level *level, int x, int y, int z) {
+    Level_updateNearbyTiles(level, x + 1, y, z, self->id);
+    Level_updateNearbyTiles(level, x - 1, y, z, self->id);
+    Level_updateNearbyTiles(level, x, y, z + 1, self->id);
+    Level_updateNearbyTiles(level, x, y, z - 1, self->id);
+    Level_updateNearbyTiles(level, x, y - 1, z, self->id);
+    Level_updateNearbyTiles(level, x, y + 1, z, self->id);
+}
+
+static void Repeater_setPlacedBy(UNUSED Tile *self, Level *level, int x, int y, int z, Mob *placer) {
+    int face = (int) (std::floor((placer->yaw * 4.0) / 360.0 + 0.5) + 2) & 3;
+    if (face == 0) {
+        face = 2;
+    } else if (face == 1) {
+        face = 5;
+    } else if (face == 2) {
+        face = 3;
+    } else if (face == 3) {
+        face = 4;
+    }
+    Level_setData(level, x, y, z, face);
+    // Check power
+    if (Repeater_checkPower(level, x, y, z, level->vtable->getData(level, x, y, z))) {
+        Level_addToTickNextTick(level, x, y, z, active_repeater->id, 1);
+    }
+}
+
+static int Repeater_use(UNUSED Tile *self, Level *level, int x, int y, int z, UNUSED Player *player) {
+    int dir = level->vtable->getData(level, x, y, z);
+    int power = dir >> 2;
+    power = (power + 1) & 0b11;
+    dir = (dir & 0b0011) | (power << 2);
+    Level_setData(level, x, y, z, dir);
+    return 1;
+};
 
 static void make_repeater(int id) {
     // Redstone blocks
@@ -371,9 +454,14 @@ static void make_repeater(int id) {
     //repeater->vtable->isSignalSource = Repeater_isSignalSource;
     if (id == 94) {
         repeater->vtable->getSignal2 = ActiveRepeater_getSignal2;
+        repeater->vtable->getDirectSignal = ActiveRepeater_getDirectSignal;
     }
+    repeater->vtable->tick = Repeater_tick;
+    repeater->vtable->use = Repeater_use;
     repeater->vtable->getAABB = Repeater_getAABB;
+    repeater->vtable->onPlace = Repeater_onPlace;
     repeater->vtable->mayPlace2 = Repeater_mayPlace2;
+    repeater->vtable->setPlacedBy = Repeater_setPlacedBy;
     repeater->vtable->isCubeShaped = Repeater_isCubeShaped;
     repeater->vtable->isSolidRender = Repeater_isSolidRender;
     repeater->vtable->neighborChanged = Repeater_neighborChanged;
@@ -402,17 +490,21 @@ static bool RedstoneBlock_getSignal(UNUSED Tile *self, UNUSED LevelSource *level
     return true;
 }
 
+static bool ActiveRedstoneBlock_getDirectSignal(UNUSED Tile *self, UNUSED Level *level, UNUSED int x, UNUSED int y, UNUSED int z, UNUSED int direction) {
+    return true;
+}
+
 static bool RedstoneBlock_getSignal2(UNUSED Tile *self, UNUSED LevelSource *level, UNUSED int x, UNUSED int y, UNUSED int z, UNUSED int direction) {
     return true;
 }
 
 void make_redstone_torch();
-void make_redstone_blocks() {
-    // Redstone blocks
+void make_redstone_block(int id) {
+    // TODO: Fix
     redstone_block = new Tile();
     ALLOC_CHECK(redstone_block);
-    int texture = 173;
-    Tile_constructor(redstone_block, 152, texture, Material_glass);
+    int texture = 173 + (id == 153);
+    Tile_constructor(redstone_block, id, texture, Material_glass);
     redstone_block->texture = texture;
 
     // Set VTable
@@ -430,6 +522,12 @@ void make_redstone_blocks() {
     redstone_block->category = 4;
     std::string name = "redstone_block";
     redstone_block->vtable->setDescriptionId(redstone_block, &name);
+}
+void make_redstone_blocks() {
+    // Redstone blocks
+    make_redstone_block(152);
+    // TODO: Active redstone block
+    //make_redstone_block(153);
 
     // Blocks with redstone
     make_redstone_torch();
@@ -453,12 +551,12 @@ static bool RedstoneTorch_getDirectSignal(Tile *self, Level *level, int x, int y
 }
 
 
+#if 0
 struct TorchInfo {
     int x, y, z;
     int time;
 };
 
-#if 0
 static std::vector<TorchInfo>
 static void RedstoneTorch_tick(Tile *self, Level *level, int x, int y, int z) {
     // Remove from list

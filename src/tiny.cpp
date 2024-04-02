@@ -66,7 +66,7 @@ OVERWRITE_CALLS(DoorTile_use_non_virtual, bool, DoorTile_use, (DoorTile *self, L
 static Item_vtable *WeaponItem_vtable = (Item_vtable *) 0x10ef30;
 static bool clip_through_hitboxless = true;
 HOOK_FROM_CALL(0x7f5b0, HitResult, Level_clip, (Level *level, uchar *param_1, uchar *param_2, bool clip_liquids, bool param_3)) {
-    return Level_clip(level, param_1, param_2, clip_liquids, clip_through_hitboxless || param_3);
+    return Level_clip_orignal(level, param_1, param_2, clip_liquids, clip_through_hitboxless || param_3);
 }
 static void on_tick(Minecraft *mc) {
     LocalPlayer *player = mc->player;
