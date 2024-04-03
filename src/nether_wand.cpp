@@ -40,6 +40,10 @@ int transform_id(int *id, int data, bool *should_heal) {
         case 40:
             *id = 39;
             return 0;
+        // Redstone Block -> Active Redstone Block
+        case 152:
+            *id = 153;
+            return 0;
 
         /// ITEMS
         // Seeds -> Melon Seeds

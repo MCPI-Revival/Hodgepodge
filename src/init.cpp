@@ -101,6 +101,8 @@ static void Inventory_setupDefault_FillingContainer_addItem_call_injection(Filli
     //ADD_ITEM(36);
     // Redstone block
     ADD_ITEM(152);
+    // Active redstone block
+    ADD_ITEM(153);
     // OBBs
     /*for (int i = 0; i < 16; i++) {
         ADD_ITEM_AUX(OBB_ID, i);
@@ -266,6 +268,7 @@ static void Language_injection(__attribute__((unused)) void *null) {
     I18n__strings.insert(std::make_pair("tile.piston.name", "Piston"));
     I18n__strings.insert(std::make_pair("tile.pistonSticky.name", "Sticky Piston"));
     I18n__strings.insert(std::make_pair("tile.redstone_block.name", "Redstone Block"));
+    I18n__strings.insert(std::make_pair("tile.active_redstone_block.name", "Active Redstone Block"));
 
     // Lang fixes that needed changes in tiny.cpp
     I18n__strings.insert(std::make_pair("tile.waterStill.name", "Still Water"));

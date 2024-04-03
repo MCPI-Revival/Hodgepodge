@@ -125,6 +125,7 @@ static bool pushable(Level *level, int x, int y, int z, int id) {
         return !active;
     } else if (t->vtable->getRenderShape(t) != 0) {
         // Temp thingy bc I'm too lazy to find out what weirdly shaped stuff can move
+        // TODO: Remove temp thingy (bc I'm too lazy to find out what weirdly shaped stuff can move)
         return false;
     }
     return true;
@@ -315,6 +316,10 @@ AABB *PistonBase_getAABB(Tile *self, UNUSED Level *level, int x, int y, int z) {
     return aabb;
 }
 
+static bool PistonBase_isCubeShaped(UNUSED Tile *self) {
+    return false;
+}
+
 static void make_piston(int id, bool sticky) {
     // Construct
     Tile *piston = (Tile *) new PistonBase;
@@ -334,6 +339,7 @@ static void make_piston(int id, bool sticky) {
     piston->vtable->onRemove = PistonBase_onRemove;
     piston->vtable->getRenderShape = PistonBase_getRenderShape;
     piston->vtable->getAABB = PistonBase_getAABB;
+    piston->vtable->isCubeShaped = PistonBase_isCubeShaped;
 
     // Init
     Tile_init(piston);

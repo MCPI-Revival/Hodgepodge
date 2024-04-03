@@ -14,6 +14,7 @@ static Item *repeater_item = NULL;
 static Tile *inactive_repeater = NULL;
 static Tile *active_repeater = NULL;
 static Tile *redstone_block = NULL;
+static Tile *active_redstone_block = NULL;
 static Tile *redstone_torch = NULL;
 
 int RedStoneOreTile_getResource_injection(UNUSED Tile *t, UNUSED int data, UNUSED Random *random) {
@@ -494,40 +495,58 @@ static bool ActiveRedstoneBlock_getDirectSignal(UNUSED Tile *self, UNUSED Level 
     return true;
 }
 
+void ActiveRedstoneBlock_onPlaceOrRemove(Tile *self, Level *level, int x, int y, int z) {
+    Level_updateNearbyTiles(level, x, y - 1, z, self->id);
+    Level_updateNearbyTiles(level, x, y + 1, z, self->id);
+    Level_updateNearbyTiles(level, x - 1, y, z, self->id);
+    Level_updateNearbyTiles(level, x + 1, y, z, self->id);
+    Level_updateNearbyTiles(level, x, y, z - 1, self->id);
+    Level_updateNearbyTiles(level, x, y, z + 1, self->id);
+}
+
 static bool RedstoneBlock_getSignal2(UNUSED Tile *self, UNUSED LevelSource *level, UNUSED int x, UNUSED int y, UNUSED int z, UNUSED int direction) {
     return true;
 }
 
 void make_redstone_torch();
-void make_redstone_block(int id) {
-    // TODO: Fix
-    redstone_block = new Tile();
-    ALLOC_CHECK(redstone_block);
-    int texture = 173 + (id == 153);
-    Tile_constructor(redstone_block, id, texture, Material_glass);
-    redstone_block->texture = texture;
+void make_redstone_block(int id, int texture) {
+    Tile *block = new Tile();
+    ALLOC_CHECK(block);
+    Tile_constructor(block, id, texture, Material_glass);
+    block->texture = texture;
 
     // Set VTable
-    redstone_block->vtable = dup_Tile_vtable(Tile_vtable_base);
-    ALLOC_CHECK(redstone_block->vtable);
-    redstone_block->vtable->isSignalSource = RedstoneBlock_isSignalSource;
-    redstone_block->vtable->getSignal = RedstoneBlock_getSignal;
-    redstone_block->vtable->getSignal2 = RedstoneBlock_getSignal2;
+    block->vtable = dup_Tile_vtable(Tile_vtable_base);
+    ALLOC_CHECK(block->vtable);
+    block->vtable->isSignalSource = RedstoneBlock_isSignalSource;
+    block->vtable->getSignal = RedstoneBlock_getSignal;
+    block->vtable->getSignal2 = RedstoneBlock_getSignal2;
+    if (id != 152) {
+        block->vtable->getDirectSignal = ActiveRedstoneBlock_getDirectSignal;
+        block->vtable->onPlace = ActiveRedstoneBlock_onPlaceOrRemove;
+        block->vtable->onRemove = ActiveRedstoneBlock_onPlaceOrRemove;
+    }
 
     // Init
-    Tile_init(redstone_block);
-    redstone_block->vtable->setDestroyTime(redstone_block, 2.0f);
-    redstone_block->vtable->setExplodeable(redstone_block, 10.0f);
-    redstone_block->vtable->setSoundType(redstone_block, &Tile_SOUND_STONE);
-    redstone_block->category = 4;
-    std::string name = "redstone_block";
-    redstone_block->vtable->setDescriptionId(redstone_block, &name);
+    Tile_init(block);
+    block->vtable->setDestroyTime(block, 2.0f);
+    block->vtable->setExplodeable(block, 10.0f);
+    block->vtable->setSoundType(block, &Tile_SOUND_STONE);
+    block->category = 4;
+    std::string name = id == 152 ? "redstone_block" : "active_redstone_block";
+    block->vtable->setDescriptionId(block, &name);
+
+    if (id == 152) {
+        redstone_block = block;
+    } else {
+        active_redstone_block = block;
+    }
 }
 void make_redstone_blocks() {
     // Redstone blocks
-    make_redstone_block(152);
-    // TODO: Active redstone block
-    //make_redstone_block(153);
+    make_redstone_block(152, 173);
+    // Active redstone block
+    make_redstone_block(153, 191);
 
     // Blocks with redstone
     make_redstone_torch();

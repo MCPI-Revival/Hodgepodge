@@ -57,6 +57,9 @@
   - Dropped by redstone ore
   - Can be placed!
   - TODO: Demojank the autojump code
+- ADDED: Redstone Block
+- ADDED: Active Redstone Block
+  - Same as a Redstone Block, but it hard powers nearby blocks
 - ADDED: Piston and sticky piston
   - Work mostly as expected
   - Lots of fun stuff can be tweaked in `src/piston.h`
@@ -70,6 +73,7 @@
     - Bricks into nether bricks
     - Flowers and saplings into dead bushes
     - Mushrooms into the other mushrooms
+    - Redstone block int an active redstone block
     - Seeds into melon seeds
     - Sugar or gunpowder into glowstone
     - Cactus into a slime ball
