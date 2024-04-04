@@ -411,13 +411,13 @@ static void Repeater_onPlace(Tile *self, Level *level, int x, int y, int z) {
 static void Repeater_setPlacedBy(UNUSED Tile *self, Level *level, int x, int y, int z, Mob *placer) {
     int face = (int) (std::floor((placer->yaw * 4.0) / 360.0 + 0.5) + 2) & 3;
     if (face == 0) {
-        face = 2;
+        face = 4;
     } else if (face == 1) {
         face = 5;
     } else if (face == 2) {
-        face = 3;
+        face = 2;
     } else if (face == 3) {
-        face = 4;
+        face = 3;
     }
     Level_setData(level, x, y, z, face);
     // Check power
