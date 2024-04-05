@@ -276,7 +276,7 @@ static void PistonBase_neighborChanged(Tile *self, Level *level, int x, int y, i
     bool hasNeighborSignal = getNeighborSignal(level, x, y, z, direction);
     if (hasNeighborSignal && !is_extended) {
         if (canPushLine(level, x, y, z, direction)) {
-            Level_setData(level, x, y, z, direction | 8);
+            Level_setTileAndDataNoUpdate(level, x, y, z, self->id, direction | 8);
             move(self, level, x, y, z, true, direction);
         }
     } else if (!hasNeighborSignal && is_extended) {

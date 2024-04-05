@@ -437,6 +437,65 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     return true;
 }
 
+bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y, int z) {
+    int data = self->level->vtable->getData(self->level, x, y, z);
+    int delay = data >> 2;
+    int dir = data & 0b0011;
+    TileRenderer_tesselateBlockInWorld(self, tile, x, y, z);
+    // Render torches
+	Tesselator *t = &Tesselator_instance;
+	float brightness = tile->vtable->getBrightness(tile, self->level, x, y, z);
+    brightness *= 256;
+	Tesselator_color(t, brightness, brightness, brightness, 255);
+    static float delay_offset[] = {-0.0625, 0.0625, 0.1875, 0.3125};
+    float tx1 = 0, tx2 = 0, tz1 = 0, tz2 = 0, ty = -0.1875;
+    float txzo = -0.3125;
+    if (dir == 0 || dir == 2) {
+        float m = dir == 0 ? 1 : -1;
+        tz2 = txzo * m;
+        tz1 = delay_offset[delay] * m;
+    } else {
+        float m = dir == 3 ? 1 : -1;
+        tx2 = txzo * m;
+        tx1 = delay_offset[delay] * m;
+    }
+    repeater_rendering_torches = true;
+    TileRenderer_tesselateTorch(self, tile, x + tx1, y + ty, z + tz1, 0, 0);
+    TileRenderer_tesselateTorch(self, tile, x + tx2, y + ty, z + tz2, 0, 0);
+    repeater_rendering_torches = false;
+    // Render rotated base
+    float u = (tile->texture & 0xf) << 4, v = (tile->texture & 0xf0);
+    u /= 256.f;
+    v /= 256.f;
+    float us[4], vs[4];
+    if (dir == 2) {
+        us[0] = us[1] = u + UV_S;
+        us[2] = us[3] = u;
+        vs[1] = vs[2] = v + UV_S;
+        vs[0] = vs[3] = v;
+    } else if (dir == 0) {
+        us[0] = us[1] = u;
+        us[2] = us[3] = u + UV_S;
+        vs[1] = vs[2] = v;
+        vs[0] = vs[3] = v + UV_S;
+    } else if (dir == 1) {
+        us[0] = us[3] = u + UV_S;
+        us[2] = us[1] = u;
+        vs[3] = vs[2] = v + UV_S;
+        vs[0] = vs[1] = v;
+    } else if (dir == 3) {
+        us[0] = us[3] = u;
+        us[2] = us[1] = u + UV_S;
+        vs[3] = vs[2] = v;
+        vs[0] = vs[1] = v + UV_S;
+    }
+    Tesselator_vertexUV(t, x + 1, y + 0.0625f, z + 1, us[0], vs[0]);
+    Tesselator_vertexUV(t, x + 1, y + 0.0625f, z,     us[1], vs[1]);
+    Tesselator_vertexUV(t, x,     y + 0.0625f, z,     us[2], vs[2]);
+    Tesselator_vertexUV(t, x,     y + 0.0625f, z + 1, us[3], vs[3]);
+    return true;
+}
+
 // Inject
 HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self, Tile *tile, int x, int y, int z)) {
     int shape = tile->vtable->getRenderShape(tile);
@@ -454,6 +513,8 @@ HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self
         return TileRenderer_tesselatePiston(tile, x, y, z, data, mc->level);
     } else if (shape == 52) {
         return TileRenderer_tesselateDust(self, tile, x, y, z);
+    } else if (shape == 53) {
+        return TileRenderer_tesselateRepeater(self, tile, x, y, z);
     }
     return TileRenderer_tesselateInWorld_original(self, tile, x, y, z);
 }

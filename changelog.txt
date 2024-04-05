@@ -1,6 +1,10 @@
 0.1.2:
 - Added active redstone block
 - Fix repeater placement
+- Fix repeater rendering
+- Fix pistons updating before pushing
+- Allow render components to be placed on glass and slabs
+- Fix repeater drops
 
 0.1.1:
 - Fix 1-tick pistons

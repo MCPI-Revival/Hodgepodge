@@ -21,6 +21,17 @@ int RedStoneOreTile_getResource_injection(UNUSED Tile *t, UNUSED int data, UNUSE
     return REDSTONE_ID;
 }
 
+static bool canBePlacedOn(Level *level, int x, int y, int z) {
+    int id = level->vtable->getTile(level, x, y, z);
+    // Glass
+    return id == 20
+        // Double slab
+        || id == 43
+        // Slab
+        || (id == 44 && level->vtable->getData(level, x, y, z) > 6)
+        || level->vtable->isSolidRenderTile(level, x, y, z);
+}
+
 static void make_redstone_tileitems() {
     // Redstone dust
     redstone = (Item *) new TilePlanterItem();
@@ -63,7 +74,7 @@ static int RedstoneWire_getRenderShape(UNUSED Tile *self) {
     return 52;
 }
 static bool RedstoneWire_mayPlace2(UNUSED Tile *self, Level *level, int x, int y, int z) {
-    return level->vtable->isSolidRenderTile(level, x, y - 1, z);
+    return canBePlacedOn(level, x, y - 1, z);
 }
 
 static int RedstoneWire_getRenderLayer(UNUSED Tile *self) {
@@ -321,9 +332,13 @@ void make_redstone_wire() {
 }
 
 // Repeater
+bool repeater_rendering_torches = false;
 static AABB *Repeater_getAABB(UNUSED Tile *self, UNUSED Level *level, UNUSED int x, UNUSED int y, UNUSED int z) {
     // This is wrong, but I don't care
     return NULL;
+}
+static int Repeater_getRenderShape(UNUSED Tile *self) {
+    return 53;
 }
 static bool Repeater_isSolidRender(UNUSED Tile *self) {
     return false;
@@ -332,7 +347,7 @@ static bool Repeater_isCubeShaped(UNUSED Tile *self) {
     return false;
 }
 static bool Repeater_mayPlace2(UNUSED Tile *self, Level *level, int x, int y, int z) {
-    return level->vtable->isSolidRenderTile(level, x, y - 1, z);
+    return canBePlacedOn(level, x, y - 1, z);
 }
 
 static bool ActiveRepeater_getSignal2(UNUSED Tile *self, LevelSource *level, int x, int y, int z, int side) {
@@ -345,6 +360,12 @@ static bool ActiveRepeater_getSignal2(UNUSED Tile *self, LevelSource *level, int
 
 static bool ActiveRepeater_getDirectSignal(Tile *self, Level *level, int x, int y, int z, int direction) {
     return ActiveRepeater_getSignal2(self, (LevelSource *) level, x, y, z, direction);
+}
+static int Repeater_getTexture1(Tile *self) {
+    if (repeater_rendering_torches) {
+        return self->id == active_repeater->id ? 3+16*6 : 3+16*7;
+    }
+    return self->texture;
 }
 
 static bool Repeater_checkPower(Level *level, int x, int y, int z, int data = -1) {
@@ -435,12 +456,16 @@ static int Repeater_use(UNUSED Tile *self, Level *level, int x, int y, int z, UN
     return 1;
 };
 
+int Repeater_getResource(UNUSED Tile *t, UNUSED int data, UNUSED Random *random) {
+    return REPEATER_ID;
+}
+
 static void make_repeater(int id) {
     // Redstone blocks
     Tile *repeater = new Tile();
     ALLOC_CHECK(repeater);
     int texture = 131 + (id == 94)*16;
-    Tile_constructor(repeater, id, texture, Material_stone);
+    Tile_constructor(repeater, id, texture, Material_glass);
     repeater->texture = texture;
 
     // Set VTable
@@ -457,17 +482,20 @@ static void make_repeater(int id) {
         repeater->vtable->getSignal2 = ActiveRepeater_getSignal2;
         repeater->vtable->getDirectSignal = ActiveRepeater_getDirectSignal;
     }
-    repeater->vtable->tick = Repeater_tick;
     repeater->vtable->use = Repeater_use;
+    repeater->vtable->tick = Repeater_tick;
     repeater->vtable->getAABB = Repeater_getAABB;
     repeater->vtable->onPlace = Repeater_onPlace;
     repeater->vtable->mayPlace2 = Repeater_mayPlace2;
+    repeater->vtable->getTexture1 = Repeater_getTexture1;
+    repeater->vtable->getResource = Repeater_getResource;
     repeater->vtable->setPlacedBy = Repeater_setPlacedBy;
+    repeater->vtable->getResource = Repeater_getResource;
     repeater->vtable->isCubeShaped = Repeater_isCubeShaped;
     repeater->vtable->isSolidRender = Repeater_isSolidRender;
+    repeater->vtable->getRenderShape = Repeater_getRenderShape;
     repeater->vtable->neighborChanged = Repeater_neighborChanged;
-    // TODO: Repeater item
-    //repeater->vtable->getResource = Repeater_getResource;
+    repeater->vtable->getRenderLayer = RedstoneWire_getRenderLayer;
 
     // Init
     Tile_init(repeater);

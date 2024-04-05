@@ -7,3 +7,4 @@
 bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side);
 void make_redstone_wire();
 void make_redstone_blocks();
+extern bool repeater_rendering_torches;
