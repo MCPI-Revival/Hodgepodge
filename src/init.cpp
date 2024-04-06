@@ -92,6 +92,7 @@ static void Inventory_setupDefault_FillingContainer_addItem_call_injection(Filli
     ADD_ITEM(BOMB_ITEM_ID);
     ADD_ITEM(DASH_ITEM_ID);
     ADD_ITEM(NETHER_WAND_ID);
+    ADD_ITEM(123);
     //ADD_ITEM(FRAME_TILE_ID);
     // Piston
     ADD_ITEM(33);
@@ -233,6 +234,8 @@ static void Tile_initTiles_injection(UNUSED void *null) {
     make_pistons();
     make_redstone_blocks();
     make_redstone_wire();
+    make_lamp(123, false);
+    make_lamp(124, true);
 }
 
 static void Item_initItems_injection(UNUSED void *null) {

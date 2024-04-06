@@ -5,6 +5,8 @@
 - Fix pistons updating before pushing
 - Allow render components to be placed on glass and slabs
 - Fix repeater drops
+- Add redstone lamp
+- Make liquids replacable by pistons
 
 0.1.1:
 - Fix 1-tick pistons

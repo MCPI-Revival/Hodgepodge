@@ -7,7 +7,7 @@
 #include "api.h"
 #include "redstone.h"
 
-// Create Item
+// Items/tiles
 static Item *redstone = NULL;
 static Tile *redstone_wire = NULL;
 static Item *repeater_item = NULL;
@@ -16,6 +16,8 @@ static Tile *active_repeater = NULL;
 static Tile *redstone_block = NULL;
 static Tile *active_redstone_block = NULL;
 static Tile *redstone_torch = NULL;
+static Tile *lamp = NULL;
+static Tile *active_lamp = NULL;
 
 int RedStoneOreTile_getResource_injection(UNUSED Tile *t, UNUSED int data, UNUSED Random *random) {
     return REDSTONE_ID;
@@ -714,6 +716,42 @@ void make_redstone_torch() {
     std::string name = "redstone_torch";
     redstone_torch->vtable->setDescriptionId(redstone_torch, &name);
 
+}
+
+static void Lamp_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
+    bool powered = Level_hasDirectSignal(level, x, y, z) || Level_hasNeighborSignal(level, x, y, z);
+    if (!powered && self->id == active_lamp->id) {
+        Level_setTile(level, x, y, z, lamp->id);
+    } else if (powered && self->id == lamp->id) {
+        Level_setTile(level, x, y, z, active_lamp->id);
+    }
+}
+
+static void Lamp_onPlace(Tile *self, Level *level, int x, int y, int z) {
+    Lamp_neighborChanged(self, level, x, y, z, 0);
+}
+
+void make_lamp(int id, bool active) {
+    Tile *_lamp = new Tile();
+    ALLOC_CHECK(redstone_torch);
+    int texture = (11+16*11) + active;
+    Tile_constructor(_lamp, id, texture, Material_glass);
+    _lamp->texture = texture;
+
+    _lamp->vtable = dup_Tile_vtable(Tile_vtable_base);
+    ALLOC_CHECK(_lamp->vtable);
+    if (active) Tile_lightEmission[id] = 300;
+    _lamp->vtable->neighborChanged = Lamp_neighborChanged;
+    _lamp->vtable->onPlace = Lamp_onPlace;
+
+    Tile_init(_lamp);
+    _lamp->vtable->setDestroyTime(_lamp, 0.3f);
+    _lamp->category = 4;
+    if (active) {
+        active_lamp = _lamp;
+    } else {
+        lamp = _lamp;
+    }
 }
 
 bool Level_getSignal_isSolidBlockingTile_injection(Level *level, int x, int y, int z) {

@@ -111,8 +111,12 @@ static bool getNeighborSignal(Level *level, int x, int y, int z, int direction) 
     ;
 }
 
+static bool replacable(int id) {
+    return id == 0 || (8 <= id && id <= 11);
+}
+
 static bool pushable(Level *level, int x, int y, int z, int id) {
-    if (id == 0) return true;
+    if (replacable(id)) return true;
     Tile *t = Tile_tiles[id];
     if (!t) return false;
     if (id == 49 || id == 7 || t->destroyTime == -1 || id == 36 || id == 34) {
@@ -147,7 +151,7 @@ static bool canPushLine(Level *level, int x, int y, int z, int direction) {
             return false;
         }
         int id = level->vtable->getTile(level, xo, yo, zo);
-        if (id == 0) break;
+        if (replacable(id)) break;
         if (!pushable(level, xo, yo, zo, id)) {
             // TODO: Crushing
             return false;
@@ -173,7 +177,7 @@ static bool extend(Tile *self, Level *level, int x, int y, int z, int direction)
             return false;
         }
         int id = level->vtable->getTile(level, xo, yo, zo);
-        if (id == 0) break;
+        if (replacable(id)) break;
         if (!pushable(level, xo, yo, zo, id)) {
             return false;
         }
