@@ -158,12 +158,12 @@ HOOK_FROM_CALL(0xd2544, TileEntity *, TileEntityFactory_createTileEntity, (int i
         return make_pedestal_tile_entity();
     }
     // Call original
-    return TileEntityFactory_createTileEntity_original(id);
+    return TileEntityFactory_createTileEntity_original_FG6_API(id);
 }
 
 HOOK_FROM_CALL(0x149b0, void, TileEntity_initTileEntities, ()) {
     // Call original
-    TileEntity_initTileEntities_original();
+    TileEntity_initTileEntities_original_FG6_API();
     // Add
     std::string str = "Pedestal";
     TileEntity_setId(47, &str);
@@ -204,7 +204,7 @@ static TileEntityRenderer *make_pedestal_tile_entity_renderer() {
 
 HOOK_FROM_CALL(0x67330, void, TileEntityRenderDispatcher_constructor, (TileEntityRenderDispatcher *self)) {
     // Call original
-    TileEntityRenderDispatcher_constructor_original(self);
+    TileEntityRenderDispatcher_constructor_original_FG6_API(self);
     // Add pedestal renderer
     TileEntityRenderer *pedestalTileEntityRenderer = make_pedestal_tile_entity_renderer();
     self->renderer_map.insert(std::make_pair(10, pedestalTileEntityRenderer));

@@ -18,7 +18,7 @@ static bool TripodCamera_hurt_injection(Mob *self, Entity *attacker, UNUSED int 
     yaw = mc->player->yaw;
     return false;
 }
-Mob_tick_t TripodCamera_tick_original = NULL;
+Mob_tick_t TripodCamera_tick_original_FG6_API = NULL;
 static void TripodCamera_tick_injection(Mob *self) {
     if (self == mc->camera && mc->player) {
         self->pitch += mc->player->pitch - pitch;
@@ -37,7 +37,7 @@ static void TripodCamera_tick_injection(Mob *self) {
         }
     }
     // Call orignal
-    TripodCamera_tick_original(self);
+    TripodCamera_tick_original_FG6_API(self);
     // Check if removed
     if (self == mc->camera && self->pending_removal) {
         mc->camera = (Mob *) mc->player;
@@ -76,6 +76,6 @@ __attribute__((constructor)) static void init() {
     // TODO: Fix astral projection bug
     // Camera preview
     patch_address((void *) 0x10c914, (void *) TripodCamera_hurt_injection);
-    TripodCamera_tick_original = *(Mob_tick_t *) 0x10c8a4;
+    TripodCamera_tick_original_FG6_API = *(Mob_tick_t *) 0x10c8a4;
     patch_address((void *) 0x10c8a4, (void *) TripodCamera_tick_injection);
 }

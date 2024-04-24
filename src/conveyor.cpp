@@ -113,6 +113,7 @@ void ConveyorBelt_entityInside(UNUSED Tile *tile, Level *level, int x, int y, in
     // Don't let items despawn on belts
     if (entity->vtable->getEntityTypeId(entity) == 64) {
         ((ItemEntity *) entity)->age = 0;
+        entity->y = std::max((float) y + 0.5f, entity->y);
     }
 }
 

@@ -1,3 +1,6 @@
 # Building stuff
 build/
 libredstone.so
+
+# Secret stuff
+src/portal.cpp

@@ -9,6 +9,7 @@
 #include "piston.h"
 #include "api.h"
 #include "init.h"
+#include "belt.h"
 
 struct PistonBase : Tile {
     bool sticky;
@@ -119,6 +120,7 @@ static bool pushable(Level *level, int x, int y, int z, int id) {
     if (replacable(id)) return true;
     Tile *t = Tile_tiles[id];
     if (!t) return false;
+    if (id == BELT_ID) return true;
     if (id == 49 || id == 7 || t->destroyTime == -1 || id == 36 || id == 34) {
         return false;
     } else if (Tile_isEntityTile[id]) {
@@ -396,6 +398,8 @@ static void MovingPistonTE_place(MovingPistonTE *self) {
 
 static void MovingPistonTE_moveEntities(TileEntity *_self) {
     MovingPistonTE *self = (MovingPistonTE *) _self;
+    // Do not do it if it is done
+    if (self->pos >= 1.f) return;
     // Get AABB
     AABB aabb = {
         (float) self->x,     (float) self->y,        (float) self->z,
@@ -404,6 +408,7 @@ static void MovingPistonTE_moveEntities(TileEntity *_self) {
     float pos = 1 - self->pos;
     if (self->extending) pos = -pos;
     int dir = self->direction;
+    // There is a crash here for loading! `dir` is too big!
     aabb.x1 += pis_dir[dir][0] * pos;
     aabb.x2 += pis_dir[dir][0] * pos;
     aabb.y1 += pis_dir[dir][1] * pos;
@@ -417,7 +422,7 @@ static void MovingPistonTE_moveEntities(TileEntity *_self) {
     float oy = pis_dir[dir][1] * P_SPEED;
     float oz = pis_dir[dir][2] * P_SPEED;
     if (!self->extending) {
-        ox = -ox; oy = -oy; oz = -oz;
+        ox = -ox; oy = -oy + 0.1; oz = -oz;
     }
     for (Entity *entity : *entities) {
         if (entity) {
@@ -443,17 +448,23 @@ static bool MovingPistonTE_shouldSave(UNUSED TileEntity *self) {
 }
 
 static void MovingPistonTE_load(TileEntity *self, CompoundTag *tag) {
-    std::string str = "move_id";
+    TileEntity_load_non_virtual(self, tag);
+
+    // TODO: Terrible!
+    /*std::string str = "move_id";
     ((MovingPistonTE *) self)->moving_id = CompoundTag_getShort(tag, &str);
     str = "move_meta";
     ((MovingPistonTE *) self)->moving_meta = CompoundTag_getShort(tag, &str);
     str = "direction";
     ((MovingPistonTE *) self)->direction = CompoundTag_getShort(tag, &str);
     str = "extending";
-    ((MovingPistonTE *) self)->extending = CompoundTag_getShort(tag, &str);
+    ((MovingPistonTE *) self)->extending = CompoundTag_getShort(tag, &str);*/
 }
 
 static bool MovingPistonTE_save(TileEntity *self, CompoundTag *tag) {
+    TileEntity_save_non_virtual(self, tag);
+
+    // TODO: This just doesn't work!
     std::string str = "move_id";
     CompoundTag_putShort(tag, &str, ((MovingPistonTE *) self)->moving_id);
     str = "move_meta";
@@ -490,8 +501,17 @@ HOOK_FROM_CALL(0xd2544, TileEntity *, TileEntityFactory_createTileEntity, (int i
         return make_MovingPistonTE();
     }
     // Call original
-    return TileEntityFactory_createTileEntity_original(id);
+    return TileEntityFactory_createTileEntity_original_FG6_API(id);
 }
+
+HOOK_FROM_CALL(0x149b0, void, TileEntity_initTileEntities, ()) {
+    // Call original
+    TileEntity_initTileEntities_original_FG6_API();
+    // Add
+    std::string str = "Piston";
+    TileEntity_setId(49, &str);
+}
+
 
 // MovingPiston entitytile
 static TileEntity *MovingPiston_newTileEntity(UNUSED EntityTile *self) {
@@ -531,8 +551,28 @@ static int MovingPiston_use(UNUSED EntityTile *self, Level *level, int x, int y,
     if (te != NULL) {
         te->level = level;
         MovingPistonTE_place((MovingPistonTE *) te);
+    } else {
+        Level_setTileAndData(level, x, y, z, 0, 0);
     }
     return 1;
+}
+
+static AABB *MovingPiston_getAABB(EntityTile *self, UNUSED Level *level, int x, int y, int z) {
+    TileEntity *te = Level_getTileEntity(level, x, y, z);
+    if (te != NULL && Tile_tiles[((MovingPistonTE *)te)->moving_id]) {
+        Tile *t = Tile_tiles[((MovingPistonTE *)te)->moving_id];
+        t->vtable->getAABB(t, level, x, y, z);
+    }
+    return Tile_getAABB_non_virtual((Tile *) self, level, x, y, z);
+}
+
+static void MovingPiston_addAABBs(EntityTile *self, Level *level, int x, int y, int z, AABB *intersecting, std::vector<AABB> *aabbs) {
+    TileEntity *te = Level_getTileEntity(level, x, y, z);
+    if (te != NULL && Tile_tiles[((MovingPistonTE *)te)->moving_id]) {
+        Tile *t = Tile_tiles[((MovingPistonTE *)te)->moving_id];
+        t->vtable->addAABBs(t, level, x, y, z, intersecting, aabbs);
+    }
+    return Tile_addAABBs_non_virtual((Tile *) self, level, x, y, z, intersecting, aabbs);
 }
 
 static void make_moving_piston(int id) {
@@ -554,6 +594,8 @@ static void make_moving_piston(int id) {
     piston_moving->vtable->isSolidRender = MovingPiston_isSolidRender;
     piston_moving->vtable->getRenderLayer = MovingPiston_getRenderLayer;
     piston_moving->vtable->isCubeShaped = MovingPiston_isCubeShaped;
+    piston_moving->vtable->getAABB = MovingPiston_getAABB;
+    piston_moving->vtable->addAABBs = MovingPiston_addAABBs;
     piston_moving->vtable->use = MovingPiston_use;
 
     // Init
@@ -680,7 +722,7 @@ HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self
         );
         return 1;
     } else {
-        return TileRenderer_tesselateInWorld_original(self, tile, x, y, z);
+        return TileRenderer_tesselateInWorld_original_FG6_API(self, tile, x, y, z);
     }
 }
 
@@ -688,11 +730,11 @@ HOOK_FROM_CALL(0x4ba0c, void, TileRenderer_renderTile, (TileRenderer *self, Tile
     if (tile == piston_head) {
         PistonHead_setShapesCallback(
             tile, aux, [&]{
-                TileRenderer_renderTile_original(self, tile, aux);
+                TileRenderer_renderTile_original_FG6_API(self, tile, aux);
             }
         );
     } else {
-        TileRenderer_renderTile_original(self, tile, aux);
+        TileRenderer_renderTile_original_FG6_API(self, tile, aux);
     }
 }
 
@@ -788,7 +830,7 @@ static TileEntityRenderer *make_piston_tile_entity_renderer() {
 
 HOOK_FROM_CALL(0x67330, void, TileEntityRenderDispatcher_constructor, (TileEntityRenderDispatcher *self)) {
     // Call original
-    TileEntityRenderDispatcher_constructor_original(self);
+    TileEntityRenderDispatcher_constructor_original_FG6_API(self);
     // Add pedestal renderer
     TileEntityRenderer *pistonTileEntityRenderer = make_piston_tile_entity_renderer();
     self->renderer_map.insert(std::make_pair(12, pistonTileEntityRenderer));

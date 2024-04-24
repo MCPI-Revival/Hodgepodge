@@ -516,7 +516,7 @@ HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self
     } else if (shape == 53) {
         return TileRenderer_tesselateRepeater(self, tile, x, y, z);
     }
-    return TileRenderer_tesselateInWorld_original(self, tile, x, y, z);
+    return TileRenderer_tesselateInWorld_original_FG6_API(self, tile, x, y, z);
 }
 static void TileRenderer_renderGuiTile_injection(TileRenderer *self, Tile *tile, int aux) {
     // This renders in gui slots
@@ -560,7 +560,7 @@ HOOK_FROM_CALL(0x4ba0c, void, TileRenderer_renderTile, (TileRenderer *self, Tile
         //TileEntityRenderer();
         TileRenderer_tesselatePiston(tile, -0.5f, -0.5f, -0.5f, 1, NULL);
     } else {
-        TileRenderer_renderTile_original(self, tile, aux);
+        TileRenderer_renderTile_original_FG6_API(self, tile, aux);
     }
 }
 
@@ -600,7 +600,7 @@ static DynamicTexture *create_belt_texture() {
 }
 
 HOOK_FROM_CALL(0x170b4, void, Textures_addDynamicTexture, (Textures *self, DynamicTexture *tex)) {
-    Textures_addDynamicTexture_original(self, tex);
+    Textures_addDynamicTexture_original_FG6_API(self, tex);
 
     static bool ran = false;
     if (!ran) {
@@ -649,7 +649,7 @@ OVERWRITE_CALL(0x63a38, void, glTranslatef_injection, (float x, float y, float z
 
 __attribute__((constructor)) static void init() {
     // Tesselatation
-    overwrite_calls((void *) TileRenderer_renderGuiTile, (void *) TileRenderer_renderGuiTile_injection);
+    overwrite_calls_manual((void *) TileRenderer_renderGuiTile, (void *) TileRenderer_renderGuiTile_injection);
 
     // Fix aux in hand bug
     uchar cmp_r7_patch[] = {0x07, 0x00, 0x57, 0xe1}; // "cmp r7,r7"

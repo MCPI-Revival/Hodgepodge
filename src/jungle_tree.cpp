@@ -9,10 +9,10 @@
 #define VINE_ID 66
 #define VINE_TEXTURE 143
 
-Tile_getTexture2_t TreeTile_getTexture2_original = NULL;
+Tile_getTexture2_t TreeTile_getTexture2_original_FG6_API = NULL;
 int TreeTile_getTexture2_injection(Tile *t, int face, int data) {
     if (data == 3 && face != 1 && face != 0) return 153;
-    return TreeTile_getTexture2_original(t, face, data);
+    return TreeTile_getTexture2_original_FG6_API(t, face, data);
 }
 
 void Inventory_setupDefault_FillingContainer_addItem_birch_log_injection(FillingContainer *self, ItemInstance *i) {
@@ -208,7 +208,7 @@ int Mob_onLadder_Level_getTile_injection(Level *level, int x, int y, int z) {
 void*foo(){return*(void**)0x17c944;}
 __attribute__((constructor)) static void init() {
     // Add texture to log aux
-    TreeTile_getTexture2_original = *(Tile_getTexture2_t *) 0x1126d4;
+    TreeTile_getTexture2_original_FG6_API = *(Tile_getTexture2_t *) 0x1126d4;
     patch_address((void *) 0x1126d4, (void *) TreeTile_getTexture2_injection);
 
     // Add to inventory right after birch

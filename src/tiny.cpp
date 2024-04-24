@@ -66,7 +66,7 @@ OVERWRITE_CALLS(DoorTile_use_non_virtual, bool, DoorTile_use, (DoorTile *self, L
 static Item_vtable *WeaponItem_vtable = (Item_vtable *) 0x10ef30;
 static bool clip_through_hitboxless = true;
 HOOK_FROM_CALL(0x7f5b0, HitResult, Level_clip, (Level *level, uchar *param_1, uchar *param_2, bool clip_liquids, bool param_3)) {
-    return Level_clip_original(level, param_1, param_2, clip_liquids, clip_through_hitboxless || param_3);
+    return Level_clip_original_FG6_API(level, param_1, param_2, clip_liquids, clip_through_hitboxless || param_3);
 }
 static void on_tick(Minecraft *mc) {
     LocalPlayer *player = mc->player;
@@ -78,7 +78,7 @@ static void on_tick(Minecraft *mc) {
 
 // Shovel wacking
 HOOK_FROM_CALL(0x852f4, bool, Mob_hurt, (Mob *self, Entity *attacker, int damage)) {
-    bool ret = Mob_hurt_original(self, attacker, damage);
+    bool ret = Mob_hurt_original_FG6_API(self, attacker, damage);
     if (!ret || !attacker || !attacker->vtable->isPlayer(attacker)) return ret;
     // Check inventory
     Player *p = (Player *) attacker;
@@ -181,10 +181,24 @@ __attribute__((constructor)) static void init() {
     // Allow charcoal to be turned into normal coal
     patch((void *) 0x95240, no_charcoal_patch);
 
+#if 0
     // Infinite worlds, too buggy for now, but I'm going to do it for real one day
     // Also, don't load it in a world you care about ;)
-    //overwrite_call((void *)  0xa28ec, (void *) nop);
-    //uchar nop_patch[4] = {0x00, 0xf0, 0x20, 0xe3};
-    //patch((void *) 0xa28e4, nop_patch);
-    //overwrite_call((void *)  0xb05d8, (void *) nop);
+    overwrite_call((void *)  0xa28ec, (void *) nop);
+    uchar nop_patch[4] = {0x00, 0xf0, 0x20, 0xe3};
+    patch((void *) 0xa28e4, nop_patch);
+    overwrite_call((void *) 0xb05d8, (void *) nop);
+    // Fix Level::clip
+    //patch((void *) 0xa41c4, nop_patch);
+    //patch((void *) 0xa41d0, nop_patch);
+    // Fix face culling
+    // Void culling
+    //uchar void_culling_patch[4] = {0x00, 0x80, 0xa0, 0xe3}; // "mov r8,#0x0" (movcc -> mov)
+    //patch((void *) 0xc2d98, void_culling_patch);
+    // Dist culling
+    patch((void *) 0xc2dd0, nop_patch);
+    patch((void *) 0xc2df4, nop_patch);
+    patch((void *) 0xc2e14, nop_patch);
+    patch((void *) 0xc2e2c, nop_patch);
+#endif
 }

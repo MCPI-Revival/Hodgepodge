@@ -147,7 +147,7 @@ void make_bomb() {
 }
 
 HOOK_FROM_CALL(0x60eb0, EntityRenderDispatcher*, EntityRenderDispatcher_constructor, (EntityRenderDispatcher *self)) {
-    EntityRenderDispatcher_constructor_original(self);
+    EntityRenderDispatcher_constructor_original_FG6_API(self);
 
     ItemSpriteRenderer *renderer = new ItemSpriteRenderer();
     ALLOC_CHECK(renderer);

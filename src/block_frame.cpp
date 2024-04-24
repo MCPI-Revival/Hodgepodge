@@ -136,12 +136,12 @@ HOOK_FROM_CALL(0xd2544, TileEntity *, TileEntityFactory_createTileEntity, (int i
         return make_frame_tile_entity();
     }
     // Call original
-    return TileEntityFactory_createTileEntity_original(id);
+    return TileEntityFactory_createTileEntity_original_FG6_API(id);
 }
 
 HOOK_FROM_CALL(0x149b0, void, TileEntity_initTileEntities, ()) {
     // Call original
-    TileEntity_initTileEntities_original();
+    TileEntity_initTileEntities_original_FG6_API();
     // Add
     std::string str = "Frame";
     TileEntity_setId(48, &str);

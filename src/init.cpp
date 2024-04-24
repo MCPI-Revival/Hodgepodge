@@ -362,7 +362,7 @@ static void nop(){}
 #endif
 
 __attribute__((constructor)) static void init() {
-    //overwrite_calls((void *) 0x17e08, (void *) Timer_advanceTime_injection);
+    //overwrite_calls_manual((void *) 0x17e08, (void *) Timer_advanceTime_injection);
     misc_run_on_update(mcpi_callback);
     misc_run_on_tiles_setup(Tile_initTiles_injection);
     misc_run_on_items_setup(Item_initItems_injection);
@@ -372,16 +372,16 @@ __attribute__((constructor)) static void init() {
     misc_run_on_language_setup(Language_injection);
 #else
     I18n_loadLanguage_og = (I18n_loadLanguage_t) extract_from_bl_instruction((uchar *) 0x149f0);
-    overwrite_calls((void *) I18n_loadLanguage_og, (void *) I18n_loadLanguage_injection);
+    overwrite_calls_manual((void *) I18n_loadLanguage_og, (void *) I18n_loadLanguage_injection);
 #endif
 
 #ifdef FISH
-    overwrite_calls((void *) 0x16e8c, (void *) license_check_thing);
+    overwrite_calls_manual((void *) 0x16e8c, (void *) license_check_thing);
     overwrite_call((void *) 0x39c38, (void *) license_add_button);
     overwrite_call((void *) 0x3e9cc, (void *) license_add_button);
     overwrite_call((void *) 0x39f10, (void *) compat_request_exit);
     overwrite_call((void *) 0x39f40, (void *) restore_screen);
-    overwrite_calls((void *) 0x39ff4, (void *) InvalidLicenseScreen_init_injection)
+    overwrite_calls_manual((void *) 0x39ff4, (void *) InvalidLicenseScreen_init_injection)
     overwrite_call((void *) 0x3a140, (void *) nop);
     overwrite_call((void *) 0x3a14c, (void *) nop);
     overwrite_call((void *) 0x3a174, (void *) nop);
