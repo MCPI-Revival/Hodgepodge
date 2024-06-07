@@ -6,7 +6,7 @@ This mod adds some useful things, such as QoL features, fixing bugs, adding reds
 
 ## Installing
 
-Currently this mod works with both Reborn 2.5.3 and 3.0.0. **MCPI++ currently doesn't work with it.**
+Currently this mod works with both Reborn 2.5.3 and 3.0.0. **MCPI++ doesn't work with it.**
 
 - Grab `libredstone.so` from releases tag and put it in `~/.minecraft-pi/mods/` (or `~/.var/app/com.thebrokenrail.MCPIReborn/.minecraft-pi/mods/` if you use the flatpak)
 - Put `assets/terrain.png` in `~/.minecraft-pi/overrides/images/` (or `~/.var/app/com.thebrokenrail.MCPIReborn/.minecraft-pi/overrides/images/` if you use the flatpak)
@@ -41,7 +41,6 @@ There are plans to add both ambient music and music disks, however for legal rea
 Go for it! Some good things to contribute are:
 
 - Bug fixes (for MCPI, Reborn, or this mod itself)
-- Adding MCPI++ support
 - Resolving TODOs
 - Redstone backports (from any version or edition)
 - More commands
