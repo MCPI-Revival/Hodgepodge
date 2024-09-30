@@ -31,8 +31,7 @@ static int ConveyorBelt_getRenderShape(UNUSED Tile *tile) {
 // Size
 static void ConveyorBelt_updateDefaultShape(Tile *tile) {
     // Set the default shape
-    tile->vtable->setShape(
-        tile,
+    tile->setShape(
         0.0, 0.0, 0.0,
         1.0, 0.5, 1.0
     );
@@ -71,7 +70,7 @@ static void ConveyorBelt_setPlacedBy(Tile *tile, Level *level, int x, int y, int
     } else {
         face = 0;
     }
-    Level_setTileAndData(level, x, y, z, tile->id, face);
+    level->setTileAndData(x, y, z, tile->id, face);
 }
 
 // Interaction
@@ -79,16 +78,16 @@ static int ConveyorBelt_use(UNUSED Tile *tile, Level *level, int x, int y, int z
     AABB aabb{(float) x, (float) y, (float) z, (float) x, (float) y, (float) z};
     std::vector<Entity *> buff = {};
     int num_removed = 0;
-    if (!Level_getEntitiesOfType(level, 64, &aabb, &buff)) return false;
+    if (!level->getEntitiesOfType(64, aabb, buff)) return false;
     // Remove items and give them to player
     for (Entity *e : buff) {
         // TODO: Check MP support
         if ((int)e->x == x && (int)e->y == y && (int)e->z == z) {
             num_removed += 1;
             Inventory *inventory = player->inventory;
-            if (inventory->vtable->add(inventory, &((ItemEntity*) e)->item)) {
+            if (inventory->add(&((ItemEntity*) e)->item)) {
                 // Don't remove if it wasn't given fully to the player
-                e->vtable->remove(e);
+                e->remove();
             }
         }
     }
@@ -97,7 +96,7 @@ static int ConveyorBelt_use(UNUSED Tile *tile, Level *level, int x, int y, int z
 
 void ConveyorBelt_entityInside(UNUSED Tile *tile, Level *level, int x, int y, int z, Entity *entity) {
     constexpr float mov_speed = 0.1f;
-    int data = level->vtable->getData(level, x, y, z);
+    int data = level->getData(x, y, z);
     if (data == 2) {
         entity->vel_z = std::min(entity->vel_z, -mov_speed);
     } else if (data == 3) {
@@ -111,36 +110,36 @@ void ConveyorBelt_entityInside(UNUSED Tile *tile, Level *level, int x, int y, in
         entity->vel_y = std::max(entity->vel_y, 0.5f);
     }
     // Don't let items despawn on belts
-    if (entity->vtable->getEntityTypeId(entity) == 64) {
+    if (entity->getEntityTypeId() == 64) {
         ((ItemEntity *) entity)->age = 0;
         entity->y = std::max((float) y + 0.5f, entity->y);
     }
 }
 
-void ItemEntity_playerTouch_injection(ItemEntity *self, Player *player) {
-    int t = self->level->vtable->getTile(self->level, self->x, self->y, self->z);
+void ItemEntity_playerTouch_injection(ItemEntity_playerTouch_t original, ItemEntity *self, Player *player) {
+    int t = self->level->getTile(self->x, self->y, self->z);
     // Disallow item pickup if it's on a belt or going on to one
     if (t != BELT_ID) {
-        ItemEntity_playerTouch_non_virtual(self, player);
+        original(self, player);
     }
 }
 
 __attribute__((constructor)) static void init() {
-    patch_address((void *) ItemEntity_playerTouch_vtable_addr, (void *) ItemEntity_playerTouch_injection);
+    overwrite_calls(ItemEntity_playerTouch, ItemEntity_playerTouch_injection);
 }
 
 // Makes the conveyorbelts
 void make_conveyorbelt() {
     // Construct
-    conveyorbelt = new Tile();
+    conveyorbelt = Tile::allocate();
     ALLOC_CHECK(conveyorbelt);
     int texture = BELT_ITEM_TEXTURE;
-    Tile_constructor(conveyorbelt, BELT_ID, texture, Material_metal);
+    conveyorbelt->constructor(BELT_ID, texture, Material::metal);
     conveyorbelt->texture = texture;
     ConveyorBelt_updateDefaultShape(conveyorbelt);
 
     // Set VTable
-    conveyorbelt->vtable = dup_Tile_vtable(Tile_vtable_base);
+    conveyorbelt->vtable = dup_vtable(Tile_vtable_base);
     ALLOC_CHECK(conveyorbelt->vtable);
 
     // Modify functions
@@ -157,10 +156,10 @@ void make_conveyorbelt() {
     conveyorbelt->vtable->use = ConveyorBelt_use;
 
     // Init
-    Tile_init(conveyorbelt);
-    conveyorbelt->vtable->setDestroyTime(conveyorbelt, 2.0f);
-    conveyorbelt->vtable->setExplodeable(conveyorbelt, 10.0f);
+    conveyorbelt->init();
+    conveyorbelt->setDestroyTime(2.0f);
+    conveyorbelt->setExplodeable(10.0f);
     conveyorbelt->category = 4;
     std::string name = "ConveyorBelt";
-    conveyorbelt->vtable->setDescriptionId(conveyorbelt, &name);
+    conveyorbelt->setDescriptionId(name);
 }

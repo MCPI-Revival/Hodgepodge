@@ -4,6 +4,6 @@
 
 void make_pedestal();
 
-struct PedestalTileEntity : TileEntity {
+EXTEND_STRUCT(PedestalTileEntity, TileEntity, struct {
     ItemInstance item;
-};
+});

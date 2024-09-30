@@ -78,7 +78,7 @@ static void mcpi_callback(Minecraft *mcpi) {
         ii->count = 255; \
         ii->auxiliary = aux; \
         ii->id = item_id; \
-        FillingContainer_addItem(filling_container, ii); \
+        filling_container->addItem(ii); \
     } while (false)
 #define ADD_ITEM(item_id) ADD_ITEM_AUX(item_id, 0)
 
@@ -127,7 +127,7 @@ static void Recipes_injection(Recipes *recipes) {
     std::string line2 = "lll";
     std::string line3 = "isi";
     std::vector<Recipes_Type> ingredients = {iron, stone, leather};
-    Recipes_addShapedRecipe_3(recipes, &conveyorbelt_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(conveyorbelt_item, line1, line2, line3, ingredients);
 
     // Nether wand
     RECIPE_ITEM(gold, 'g', 266, 0);
@@ -141,7 +141,7 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = " g ";
     line3 = "g  ";
     ingredients = {gold, nether_core};
-    Recipes_addShapedRecipe_3(recipes, &netherwand_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(netherwand_item, line1, line2, line3, ingredients);
 
     // Bomb
     RECIPE_ITEM(gunpowder, 'G', 289, 0);
@@ -155,7 +155,7 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = " s ";
     line3 = "G  ";
     ingredients = {gunpowder, string};
-    Recipes_addShapedRecipe_3(recipes, &bomb_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(bomb_item, line1, line2, line3, ingredients);
 
     // Pedestal
     // TODO: Recipes for other quartz stuff
@@ -169,7 +169,7 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = " Q ";
     line3 = " Q ";
     ingredients = {quartz};
-    Recipes_addShapedRecipe_3(recipes, &pedestal_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(pedestal_item, line1, line2, line3, ingredients);
 
     // Piston
     RECIPE_ITEM(cobble, 'c', 4, 0);
@@ -184,7 +184,7 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = "cic";
     line3 = "crc";
     ingredients = {cobble, planks, redstone, iron};
-    Recipes_addShapedRecipe_3(recipes, &piston_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(piston_item, line1, line2, line3, ingredients);
 
     // Sticky piston
     RECIPE_ITEM(piston, 'P', 33, 0);
@@ -198,7 +198,7 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = " s ";
     line3 = " P ";
     ingredients = {piston, slime};
-    Recipes_addShapedRecipe_3(recipes, &spiston_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(spiston_item, line1, line2, line3, ingredients);
 
     // Redstone
     RECIPE_ITEM(rblock, 'R', 152, 0);
@@ -211,7 +211,7 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = "   ";
     line3 = "   ";
     ingredients = {rblock};
-    Recipes_addShapedRecipe_3(recipes, &redstone_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(redstone_item, line1, line2, line3, ingredients);
 
     // Redstone Block
     ItemInstance rblock_item = {
@@ -223,10 +223,10 @@ static void Recipes_injection(Recipes *recipes) {
     line2 = "rrr";
     line3 = "rrr";
     ingredients = {redstone};
-    Recipes_addShapedRecipe_3(recipes, &rblock_item, &line1, &line2, &line3, &ingredients);
+    recipes->addShapedRecipe_3(rblock_item, line1, line2, line3, ingredients);
 }
 
-static void Tile_initTiles_injection(UNUSED void *null) {
+static void Tile_initTiles_injection() {
     make_conveyorbelt();
     make_oddly_bright_blocks();
     make_pedestal();
@@ -238,7 +238,7 @@ static void Tile_initTiles_injection(UNUSED void *null) {
     make_lamp(124, true);
 }
 
-static void Item_initItems_injection(UNUSED void *null) {
+static void Item_initItems_injection() {
     make_ender_pearl();
     make_nether_wand();
     make_bomb();
@@ -246,53 +246,45 @@ static void Item_initItems_injection(UNUSED void *null) {
     //make_redstone();
 }
 
-static void Language_injection(__attribute__((unused)) void *null) {
+static void Language_injection() {
     // Custom stuff
     // TODO: Fix desc strings
-    I18n__strings.insert(std::make_pair("item.ender_pearl.name", "Ender Pearl"));
-    I18n__strings.insert(std::make_pair("desc.ender_pearl", "Throw it to teleport"));
-    I18n__strings.insert(std::make_pair("item.redstoneDust.name", "Redstone Dust"));
-    I18n__strings.insert(std::make_pair("desc.redstoneDust", "Don't get your hopes up"));
-    I18n__strings.insert(std::make_pair("item.bomb.name", "Bomb"));
-    I18n__strings.insert(std::make_pair("desc.bomb", "Do you want to explode?"));
-    I18n__strings.insert(std::make_pair("item.dash.name", "Thrust Crystal"));
-    I18n__strings.insert(std::make_pair("desc.dash", "Thrust forward for a small amount of damage"));
-    I18n__strings.insert(std::make_pair("item.nether_wand.name", "Nether Wand"));
-    I18n__strings.insert(std::make_pair("desc.nether_wand", "A strange and powerful wand, with the powers of transmutation"));
-    I18n__strings.insert(std::make_pair("tile.ConveyorBelt.name", "Conveyor Belt"));
-    //I18n__strings.insert(std::make_pair("desc.ConveyorBelt", "Move stuff around with this!"));
-    I18n__strings.insert(std::make_pair("tile.Oddly Bright Block.name", "Oddly Bright Block"));
-    //I18n__strings.insert(std::make_pair("desc.Oddly Bright Block", "Why is it so oddly bright?"));
-    I18n__strings.insert(std::make_pair("tile.frame.name", "Block Frame"));
+    I18n::_strings.insert(std::make_pair("item.ender_pearl.name", "Ender Pearl"));
+    I18n::_strings.insert(std::make_pair("desc.ender_pearl", "Throw it to teleport"));
+    I18n::_strings.insert(std::make_pair("item.redstoneDust.name", "Redstone Dust"));
+    I18n::_strings.insert(std::make_pair("desc.redstoneDust", "Don't get your hopes up"));
+    I18n::_strings.insert(std::make_pair("item.bomb.name", "Bomb"));
+    I18n::_strings.insert(std::make_pair("desc.bomb", "Do you want to explode?"));
+    I18n::_strings.insert(std::make_pair("item.dash.name", "Thrust Crystal"));
+    I18n::_strings.insert(std::make_pair("desc.dash", "Thrust forward for a small amount of damage"));
+    I18n::_strings.insert(std::make_pair("item.nether_wand.name", "Nether Wand"));
+    I18n::_strings.insert(std::make_pair("desc.nether_wand", "A strange and powerful wand, with the powers of transmutation"));
+    I18n::_strings.insert(std::make_pair("tile.ConveyorBelt.name", "Conveyor Belt"));
+    //I18n::_strings.insert(std::make_pair("desc.ConveyorBelt", "Move stuff around with this!"));
+    I18n::_strings.insert(std::make_pair("tile.Oddly Bright Block.name", "Oddly Bright Block"));
+    //I18n::_strings.insert(std::make_pair("desc.Oddly Bright Block", "Why is it so oddly bright?"));
+    I18n::_strings.insert(std::make_pair("tile.frame.name", "Block Frame"));
     // Desc: Allow you to shape blocks
-    I18n__strings.insert(std::make_pair("tile.pedestal.name", "Pedestal"));
+    I18n::_strings.insert(std::make_pair("tile.pedestal.name", "Pedestal"));
     // Desc: Just the thing for showing off your rock collection
 
-    I18n__strings.insert(std::make_pair("tile.piston.name", "Piston"));
-    I18n__strings.insert(std::make_pair("tile.pistonSticky.name", "Sticky Piston"));
-    I18n__strings.insert(std::make_pair("tile.redstone_block.name", "Redstone Block"));
-    I18n__strings.insert(std::make_pair("tile.active_redstone_block.name", "Active Redstone Block"));
+    I18n::_strings.insert(std::make_pair("tile.piston.name", "Piston"));
+    I18n::_strings.insert(std::make_pair("tile.pistonSticky.name", "Sticky Piston"));
+    I18n::_strings.insert(std::make_pair("tile.redstone_block.name", "Redstone Block"));
+    I18n::_strings.insert(std::make_pair("tile.active_redstone_block.name", "Active Redstone Block"));
 
     // Lang fixes that needed changes in tiny.cpp
-    I18n__strings.insert(std::make_pair("tile.waterStill.name", "Still Water"));
-    I18n__strings.insert(std::make_pair("tile.lavaStill.name", "Still Lava"));
-    I18n__strings.insert(std::make_pair("tile.grassCarried.name", "Carried Grass"));
-    I18n__strings.insert(std::make_pair("tile.leavesCarried.name", "Carried Leaves"));
-    I18n__strings.insert(std::make_pair("tile.invBedrock.name", "Invisible Bedrock"));
+    I18n::_strings.insert(std::make_pair("tile.waterStill.name", "Still Water"));
+    I18n::_strings.insert(std::make_pair("tile.lavaStill.name", "Still Lava"));
+    I18n::_strings.insert(std::make_pair("tile.grassCarried.name", "Carried Grass"));
+    I18n::_strings.insert(std::make_pair("tile.leavesCarried.name", "Carried Leaves"));
+    I18n::_strings.insert(std::make_pair("tile.invBedrock.name", "Invisible Bedrock"));
     // Lang fixes
-    I18n__strings.insert(std::make_pair("item.camera.name", "Camera"));
-    I18n__strings.insert(std::make_pair("item.seedsMelon.name", "Melon Seeds"));
-    I18n__strings.insert(std::make_pair("tile.pumpkinStem.name", "Pumpkin Stem"));
-    I18n__strings.insert(std::make_pair("tile.stoneSlab.name", "Double Stone Slab"));
+    I18n::_strings.insert(std::make_pair("item.camera.name", "Camera"));
+    I18n::_strings.insert(std::make_pair("item.seedsMelon.name", "Melon Seeds"));
+    I18n::_strings.insert(std::make_pair("tile.pumpkinStem.name", "Pumpkin Stem"));
+    I18n::_strings.insert(std::make_pair("tile.stoneSlab.name", "Double Stone Slab"));
 }
-
-#if !REBORN_HAS_LANG
-I18n_loadLanguage_t I18n_loadLanguage_og = NULL;
-static void I18n_loadLanguage_injection(AppPlatform *app, std::string language_name) {
-    I18n_loadLanguage_og(app, language_name);
-    Language_injection(NULL);
-}
-#endif
 
 HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     ensure_title_screen_load_splashes();
@@ -368,12 +360,7 @@ __attribute__((constructor)) static void init() {
     misc_run_on_items_setup(Item_initItems_injection);
     misc_run_on_recipes_setup(Recipes_injection);
     misc_run_on_creative_inventory_setup(Inventory_setupDefault_FillingContainer_addItem_call_injection);
-#if REBORN_HAS_LANG
     misc_run_on_language_setup(Language_injection);
-#else
-    I18n_loadLanguage_og = (I18n_loadLanguage_t) extract_from_bl_instruction((uchar *) 0x149f0);
-    overwrite_calls_manual((void *) I18n_loadLanguage_og, (void *) I18n_loadLanguage_injection);
-#endif
 
 #ifdef FISH
     overwrite_calls_manual((void *) 0x16e8c, (void *) license_check_thing);

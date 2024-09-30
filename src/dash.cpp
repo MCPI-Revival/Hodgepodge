@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 
 #include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
@@ -11,13 +11,13 @@ static ItemInstance *Dash_use(UNUSED Item *self, ItemInstance *item, Level *leve
     // Deplete and hurt
     if (!player->infinite_items) {
         item->count -= 1;
-        player->vtable->hurt(player, NULL, 4);
+        player->hurt(nullptr, 4);
     }
 
     // Play the sounds
-    float f = Random_genrand_int32(&Mth__random);
+    float f = Mth::_random.genrand_int32();
     std::string name = "random.bow";
-    Level_playSound(level, (Entity *) player, &name, 0.5, 0.4 / (f * 0.4 + 0.8));
+    level->playSound((Entity *) player, name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
     // Dash
     constexpr float dash_speed = 3.f;
@@ -38,7 +38,7 @@ static Item_vtable *get_dash_item_vtable() {
     static Item_vtable *vtable = NULL;
     if (vtable == NULL) {
         // Init
-        vtable = dup_Item_vtable(Item_vtable_base);
+        vtable = dup_vtable(Item_vtable_base);
         ALLOC_CHECK(vtable);
 
         // Modify
@@ -51,16 +51,16 @@ static Item_vtable *get_dash_item_vtable() {
 static Item *dash = NULL;
 void make_dash() {
     // Construct
-    dash = new Item();
+    dash = Item::allocate();
     ALLOC_CHECK(dash);
-    Item_constructor(dash, DASH_ITEM_ID - 256);
+    dash->constructor(DASH_ITEM_ID - 256);
 
     // Set VTable
     dash->vtable = get_dash_item_vtable();
 
     // Setup
     std::string name = "dash";
-    dash->vtable->setDescriptionId(dash, &name);
+    dash->setDescriptionId(name);
     dash->max_damage = 0;
     dash->max_stack_size = 16;
     dash->texture = DASH_TEXTURE_ID;

@@ -137,7 +137,7 @@ static AABB *Vines_getAABB(UNUSED Tile *self, UNUSED Level *level, UNUSED int x,
 
 static Tile_mayPlace_t Ladder_mayPlace = NULL;
 static bool Vines_mayPlace(Tile *self, Level *level, int x, int y, int z, uchar face) {
-    if (face == 0 && level->vtable->getTile(level, x, y, z) == self->id) {
+    if (face == 0 && level->getTile(x, y, z) == self->id) {
         return true;
     }
     return Ladder_mayPlace(self, level, x, y, z, face);

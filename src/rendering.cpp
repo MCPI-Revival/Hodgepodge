@@ -17,19 +17,19 @@ constexpr float UV_S = 0.0625;
 
 // Renders the belts
 #define RENDER_SQUARE_NO_YZ(x, y, z, xp, yp, zp, u, v, up, vp) \
-    Tesselator_vertexUV(t, xp, yp, z,  up, v ); \
-    Tesselator_vertexUV(t, xp, y, zp, up, vp); \
-    Tesselator_vertexUV(t, x,  y, zp, u,  vp); \
-    Tesselator_vertexUV(t, x,  yp, z,  u,  v );
+    t->vertexUV(xp, yp, z,  up, v ); \
+    t->vertexUV(xp, y, zp, up, vp); \
+    t->vertexUV(x,  y, zp, u,  vp); \
+    t->vertexUV(x,  yp, z,  u,  v );
 
 #define RENDER_SQUARE_Y(x, y, z, xp, yp, zp, u, v, up, vp) \
-    Tesselator_vertexUV(t, xp, yp, zp, up, v ); \
-    Tesselator_vertexUV(t, xp, y,  zp, up, vp); \
-    Tesselator_vertexUV(t, x,  y,  z,  u,  vp); \
-    Tesselator_vertexUV(t, x,  yp, z,  u,  v );
+    t->vertexUV(xp, yp, zp, up, v ); \
+    t->vertexUV(xp, y,  zp, up, vp); \
+    t->vertexUV(x,  y,  z,  u,  vp); \
+    t->vertexUV(x,  yp, z,  u,  v );
 
 static void TileRenderer_tesselateBeltInWorld_renderSide(int data, float x, float y, float z, float xp, float zp, int d1, int flipData) {
-    Tesselator *t = &Tesselator_instance;
+    Tesselator *t = &Tesselator::instance;
     float u, v, up, vp;
     if (data == d1 || data == flipData) {
         u = (BELT_TOP_TEXTURE & 0xf) << 4; v = (BELT_TOP_TEXTURE & 0xf0);
@@ -58,14 +58,14 @@ static void TileRenderer_tesselateBeltInWorld_renderSide(int data, float x, floa
 }
 
 static bool TileRenderer_tesselateBeltInWorld(TileRenderer *self, Tile *tile, int x, int y, int z, int aux = -1) {
-    Tesselator *t = &Tesselator_instance;
+    Tesselator *t = &Tesselator::instance;
     // Set the brightness
     // Bottom
     float brightness = aux == -1 ?
-        (float) tile->vtable->getBrightness(tile, (LevelSource *) self->level, x, y, z) * 0.5
+        (float) tile->getBrightness((LevelSource *) self->level, x, y, z) * 0.5
         : 0.5;
     brightness *= 256;
-    Tesselator_color(t, brightness, brightness, brightness, 0xff);
+    t->color(brightness, brightness, brightness, 0xff);
 
     float u = (BELT_BOTTOM_TEXTURE & 0xf) << 4, v = (BELT_BOTTOM_TEXTURE & 0xf0);
     u /= 256.f;
@@ -77,7 +77,7 @@ static bool TileRenderer_tesselateBeltInWorld(TileRenderer *self, Tile *tile, in
     v /= 256.f;
     // Cursedness for texture rotation
     float us[4], vs[4];
-    int data = aux == -1 ? self->level->vtable->getData(self->level, x, y, z) : aux;
+    int data = aux == -1 ? self->level->getData(x, y, z) : aux;
     if (data == 2) {
         us[0] = us[1] = u + UV_S;
         us[2] = us[3] = u;
@@ -99,10 +99,10 @@ static bool TileRenderer_tesselateBeltInWorld(TileRenderer *self, Tile *tile, in
         vs[3] = vs[2] = v;
         vs[0] = vs[1] = v + UV_S;
     }
-    Tesselator_vertexUV(t, x + 1, y + 0.5, z + 1, us[0], vs[0]);
-    Tesselator_vertexUV(t, x + 1, y + 0.5, z,     us[1], vs[1]);
-    Tesselator_vertexUV(t, x,     y + 0.5, z,     us[2], vs[2]);
-    Tesselator_vertexUV(t, x,     y + 0.5, z + 1, us[3], vs[3]);
+    t->vertexUV(x + 1, y + 0.5, z + 1, us[0], vs[0]);
+    t->vertexUV(x + 1, y + 0.5, z,     us[1], vs[1]);
+    t->vertexUV(x,     y + 0.5, z,     us[2], vs[2]);
+    t->vertexUV(x,     y + 0.5, z + 1, us[3], vs[3]);
     // Sides
     TileRenderer_tesselateBeltInWorld_renderSide(data, x, y, z, x + 1, z, 2, 3);
     TileRenderer_tesselateBeltInWorld_renderSide(data, x + 1, y, z + 1, x, z + 1, 3, 2);
@@ -118,9 +118,9 @@ static constexpr int COLORS[] = {
     0x434343, 0xd88198, 0x41cd34, 0xdecf2a, 0x6689d3, 0xc354cd, 0xeb8844, 0xf0f0f0
 };
 static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UNUSED Tile *tile, int x, int y, int z) {
-    Tesselator *t = &Tesselator_instance;
-    int data = self->level->vtable->getData(self->level, x, y, z);
-    Tesselator_colorABGR(t, 0xFF000000 | COLORS[(~data & 0xf)]);
+    Tesselator *t = &Tesselator::instance;
+    int data = self->level->getData(x, y, z);
+    t->colorABGR(0xFF000000 | COLORS[(~data & 0xf)]);
     // Top and bottom
     RENDER_SQUARE_NO_YZ(x, y, z, x + 1, y, z + 1, 0, 0, 0, 0);
     RENDER_SQUARE_NO_YZ(x, y + 1, z + 1, x + 1, y + 1, z, 0, 0, 0, 0);
@@ -174,12 +174,12 @@ static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UN
 #define ADJ_UV_S() {}
 
 static bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int data, Level *level) {
-    Tesselator *t = &Tesselator_instance;
+    Tesselator *t = &Tesselator::instance;
     float brightness = level ?
-        (float) tile->vtable->getBrightness(tile, (LevelSource *) level, x, y, z)
+        (float) tile->getBrightness((LevelSource *) level, x, y, z)
         : 1;
     brightness *= 256;
-    Tesselator_color(t, brightness, brightness, brightness, 0xff);
+    t->color(brightness, brightness, brightness, 0xff);
     // Get textures
     int head = tile == sticky_piston_base ? PISTON_HEAD_TEXTURE_STICKY : PISTON_HEAD_TEXTURE;
     if (data & 0b1000) head = PISTON_HEAD_TEXTURE_EXTENDED;
@@ -198,48 +198,48 @@ static bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, 
     // Get AABB
     AABB aabb = AABB{x, y, z, x + 1, y + 1, z + 1};
     if (level) {
-        aabb = *tile->vtable->getAABB(tile, level, x, y, z);
+        aabb = *tile->getAABB(level, x, y, z);
     }
     // Top and bottom
     // TODO Make it go back too
     SET_HB(0, 1);
     ROT_TEXT(2, 3, 5, 1);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y1, aabb.z1, us[0], vs[0]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y1, aabb.z1, us[3], vs[3]);
+    t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[0], vs[0]);
+    t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
+    t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
+    t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[3], vs[3]);
     SET_HB(1, 1);
     ROT_TEXT(3, 2, 5, -1);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y2, aabb.z1, us[1], vs[1]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y2, aabb.z1, us[2], vs[2]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
+    t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
+    t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[1], vs[1]);
+    t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[2], vs[2]);
+    t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
     // aabb.x1 sides
     SET_HB(2, 1);
     ROT_TEXT(1, 0, 5, 2);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y2, aabb.z1, us[0], vs[0]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y1, aabb.z1, us[1], vs[1]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y1, aabb.z1, us[2], vs[2]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y2, aabb.z1, us[3], vs[3]);
+    t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[0], vs[0]);
+    t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[1], vs[1]);
+    t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[2], vs[2]);
+    t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[3], vs[3]);
     SET_HB(3, 1);
     ROT_TEXT(1, 0, 4, 3);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y2, aabb.z2, us[0], vs[0]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y1, aabb.z2, us[1], vs[1]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y1, aabb.z2, us[2], vs[2]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y2, aabb.z2, us[3], vs[3]);
+    t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[0], vs[0]);
+    t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[1], vs[1]);
+    t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[2], vs[2]);
+    t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[3], vs[3]);
     // aabb.z1 sides
     SET_HB(4, 1);
     ROT_TEXT(1, 0, 2, 4);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y2, aabb.z1, us[0], vs[0]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y1, aabb.z1, us[1], vs[1]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
-    Tesselator_vertexUV(t, aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
+    t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[0], vs[0]);
+    t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[1], vs[1]);
+    t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
+    t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
     SET_HB(5, 1);
     ROT_TEXT(1, 0, 3, 5);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y1, aabb.z1, us[2], vs[2]);
-    Tesselator_vertexUV(t, aabb.x2, aabb.y2, aabb.z1, us[3], vs[3]);
+    t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
+    t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
+    t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[2], vs[2]);
+    t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[3], vs[3]);
     return true;
 }
 
@@ -249,71 +249,71 @@ static bool TileRenderer_tesselatePedestalInWorld(TileRenderer *self, Tile *tile
 
     // Shaft
     tile->texture = 213;
-    tile->vtable->setShape(tile,
+    tile->setShape(
         0.2, 0.0, 0.2,
         0.8, 0.8, 0.8
     );
     if (gui) {
-        TileRenderer_renderGuiTile(self, tile, 0);
+        self->renderGuiTile(tile, 0);
     } else {
-        TileRenderer_tesselateBlockInWorld(self, tile, x, y, z);
+        self->tesselateBlockInWorld(tile, x, y, z);
     }
 
     // Top layer 1
     tile->texture = 212;
-    tile->vtable->setShape(tile,
+    tile->setShape(
         0.05, 0.8, 0.05,
         0.95, 0.9, 0.95
     );
     if (gui) {
-        TileRenderer_renderGuiTile(self, tile, 0);
+        self->renderGuiTile(tile, 0);
     } else {
-        TileRenderer_tesselateBlockInWorld(self, tile, x, y, z);
+        self->tesselateBlockInWorld(tile, x, y, z);
     }
 
     // Top layer 2
-    tile->vtable->setShape(tile,
+    tile->setShape(
         0.0, 0.90, 0.0,
         1.0, 1.0,  1.0
     );
     if (gui) {
-        TileRenderer_renderGuiTile(self, tile, 0);
+        self->renderGuiTile(tile, 0);
     } else {
-        TileRenderer_tesselateBlockInWorld(self, tile, x, y, z);
+        self->tesselateBlockInWorld(tile, x, y, z);
     }
 
     // Done
-    tile->vtable->setShape(tile, 0, 0, 0, 1, 1, 1);
+    tile->setShape(0, 0, 0, 1, 1, 1);
     tile->texture = old_texture;
     return true;
 }
 
 static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, int y, int z) {
     // Set color
-    float brightness = tile->vtable->getBrightness(tile, (LevelSource *) self->level, x, y, z);
+    float brightness = tile->getBrightness((LevelSource *) self->level, x, y, z);
     brightness *= 256;
-    float color = tile->vtable->getColor(tile, (LevelSource *) self->level, x, y, z);
+    float color = tile->getColor((LevelSource *) self->level, x, y, z);
     float r = (((int) color >> 16) & 0xff) / (float) 0xff;
     float g = (((int) color >> 8) & 0xff) / (float) 0xff;
     color = ((int) color & 0xff) / (float) 0xff;
-    Tesselator *t = &Tesselator_instance;
-    Tesselator_color(t, brightness * r, brightness * g, brightness * color, 0xff);
+    Tesselator *t = &Tesselator::instance;
+    t->color(brightness * r, brightness * g, brightness * color, 0xff);
     // Get connectivity
-    bool connected_xm = canWireConnectTo(self->level, x - 1, y, z, 1) || (!self->level->vtable->isSolidRenderTile(self->level, x - 1, y, z) && canWireConnectTo(self->level, x - 1, y - 1, z, -1));
-    bool connected_xp = canWireConnectTo(self->level, x + 1, y, z, 3) || (!self->level->vtable->isSolidRenderTile(self->level, x + 1, y, z) && canWireConnectTo(self->level, x + 1, y - 1, z, -1));
-    bool connected_zm = canWireConnectTo(self->level, x, y, z - 1, 2) || (!self->level->vtable->isSolidRenderTile(self->level, x, y, z - 1) && canWireConnectTo(self->level, x, y - 1, z - 1, -1));
-    bool connected_zp = canWireConnectTo(self->level, x, y, z + 1, 0) || (!self->level->vtable->isSolidRenderTile(self->level, x, y, z + 1) && canWireConnectTo(self->level, x, y - 1, z + 1, -1));
-    if (!self->level->vtable->isSolidRenderTile(self->level, x, y + 1, z)) {
-        if (self->level->vtable->isSolidRenderTile(self->level, x - 1, y, z) && canWireConnectTo(self->level, x - 1, y + 1, z, -1)) {
+    bool connected_xm = canWireConnectTo(self->level, x - 1, y, z, 1) || (!self->level->isSolidRenderTile(x - 1, y, z) && canWireConnectTo(self->level, x - 1, y - 1, z, -1));
+    bool connected_xp = canWireConnectTo(self->level, x + 1, y, z, 3) || (!self->level->isSolidRenderTile(x + 1, y, z) && canWireConnectTo(self->level, x + 1, y - 1, z, -1));
+    bool connected_zm = canWireConnectTo(self->level, x, y, z - 1, 2) || (!self->level->isSolidRenderTile(x, y, z - 1) && canWireConnectTo(self->level, x, y - 1, z - 1, -1));
+    bool connected_zp = canWireConnectTo(self->level, x, y, z + 1, 0) || (!self->level->isSolidRenderTile(x, y, z + 1) && canWireConnectTo(self->level, x, y - 1, z + 1, -1));
+    if (!self->level->isSolidRenderTile(x, y + 1, z)) {
+        if (self->level->isSolidRenderTile(x - 1, y, z) && canWireConnectTo(self->level, x - 1, y + 1, z, -1)) {
             connected_xm = true;
         }
-        if (self->level->vtable->isSolidRenderTile(self->level, x + 1, y, z) && canWireConnectTo(self->level, x + 1, y + 1, z, -1)) {
+        if (self->level->isSolidRenderTile(x + 1, y, z) && canWireConnectTo(self->level, x + 1, y + 1, z, -1)) {
             connected_xp = true;
         }
-        if (self->level->vtable->isSolidRenderTile(self->level, x, y, z - 1) && canWireConnectTo(self->level, x, y + 1, z - 1, -1)) {
+        if (self->level->isSolidRenderTile(x, y, z - 1) && canWireConnectTo(self->level, x, y + 1, z - 1, -1)) {
             connected_zm = true;
         }
-        if (self->level->vtable->isSolidRenderTile(self->level, x, y, z + 1) && canWireConnectTo(self->level, x, y + 1, z + 1, -1)) {
+        if (self->level->isSolidRenderTile(x, y, z + 1) && canWireConnectTo(self->level, x, y + 1, z + 1, -1)) {
             connected_zp = true;
         }
     }
@@ -363,29 +363,29 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     // Render
     if (shape != 2) {
         // Top
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u2, v2);
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u2, v1);
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u1, v1);
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u1, v2);
+        t->vertexUV(x2, y + 0.015625f, z2, u2, v2);
+        t->vertexUV(x2, y + 0.015625f, z1, u2, v1);
+        t->vertexUV(x1, y + 0.015625f, z1, u1, v1);
+        t->vertexUV(x1, y + 0.015625f, z2, u1, v2);
         // Bottom
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u2, v2);
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u2, v1);
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u1, v1);
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u1, v2);
+        t->vertexUV(x1, y + 0.015625f, z2, u2, v2);
+        t->vertexUV(x1, y + 0.015625f, z1, u2, v1);
+        t->vertexUV(x2, y + 0.015625f, z1, u1, v1);
+        t->vertexUV(x2, y + 0.015625f, z2, u1, v2);
     } else {
         // Top
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u2, v2);
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u1, v2);
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u1, v1);
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u2, v1);
+        t->vertexUV(x2, y + 0.015625f, z2, u2, v2);
+        t->vertexUV(x2, y + 0.015625f, z1, u1, v2);
+        t->vertexUV(x1, y + 0.015625f, z1, u1, v1);
+        t->vertexUV(x1, y + 0.015625f, z2, u2, v1);
         // Bottom
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z1, u2, v2);
-        Tesselator_vertexUV(t, x1, y + 0.015625f, z2, u1, v2);
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z2, u1, v1);
-        Tesselator_vertexUV(t, x2, y + 0.015625f, z1, u2, v1);
+        t->vertexUV(x1, y + 0.015625f, z1, u2, v2);
+        t->vertexUV(x1, y + 0.015625f, z2, u1, v2);
+        t->vertexUV(x2, y + 0.015625f, z2, u1, v1);
+        t->vertexUV(x2, y + 0.015625f, z1, u2, v1);
     }
     // Render going up walls
-    if (self->level->vtable->isSolidRenderTile(self->level, x, y + 1, z)) return true;
+    if (self->level->isSolidRenderTile(x, y + 1, z)) return true;
     if (shape == 0) {
         u1 = (REDSTONE_TEXTURE_S2 & 0xf) << 4; v1 = (REDSTONE_TEXTURE_S2 & 0xf0);
         u1 /= 256.f;
@@ -395,58 +395,58 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     }
     // Xm
     if (
-        self->level->vtable->isSolidRenderTile(self->level, x - 1, y, z)
-        && self->level->vtable->getTile(self->level, x - 1, y + 1, z) == 55
+        self->level->isSolidRenderTile(x - 1, y, z)
+        && self->level->getTile(x - 1, y + 1, z) == 55
     ) {
-        Tesselator_vertexUV(t, x + 0.015625f, y + 1.021875f, z + 1, u2, v1);
-        Tesselator_vertexUV(t, x + 0.015625f, y, z + 1, u1, v1);
-        Tesselator_vertexUV(t, x + 0.015625f, y, z, u1, v2);
-        Tesselator_vertexUV(t, x + 0.015625f, y + 1.021875f, z, u2, v2);
+        t->vertexUV(x + 0.015625f, y + 1.021875f, z + 1, u2, v1);
+        t->vertexUV(x + 0.015625f, y, z + 1, u1, v1);
+        t->vertexUV(x + 0.015625f, y, z, u1, v2);
+        t->vertexUV(x + 0.015625f, y + 1.021875f, z, u2, v2);
     }
     // Xp
     if (
-        self->level->vtable->isSolidRenderTile(self->level, x + 1, y, z)
-        && self->level->vtable->getTile(self->level, x + 1, y + 1, z) == 55
+        self->level->isSolidRenderTile(x + 1, y, z)
+        && self->level->getTile(x + 1, y + 1, z) == 55
     ) {
-        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y, z + 1, u1, v2);
-        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y + 1.021875f, z + 1, u2, v2);
-        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y + 1.021875f, z, u2, v1);
-        Tesselator_vertexUV(t, (x + 1) - 0.015625f, y, z, u1, v1);
+        t->vertexUV((x + 1) - 0.015625f, y, z + 1, u1, v2);
+        t->vertexUV((x + 1) - 0.015625f, y + 1.021875f, z + 1, u2, v2);
+        t->vertexUV((x + 1) - 0.015625f, y + 1.021875f, z, u2, v1);
+        t->vertexUV((x + 1) - 0.015625f, y, z, u1, v1);
 
     }
     // Zm
     if (
-        self->level->vtable->isSolidRenderTile(self->level, x, y, z - 1)
-        && self->level->vtable->getTile(self->level, x, y + 1, z - 1) == 55
+        self->level->isSolidRenderTile(x, y, z - 1)
+        && self->level->getTile(x, y + 1, z - 1) == 55
     ) {
-        Tesselator_vertexUV(t, x + 1, y, z + 0.015625f, u1, v2);
-        Tesselator_vertexUV(t, x + 1, y + 1.021875f, z + 0.015625f, u2, v2);
-        Tesselator_vertexUV(t, x, y + 1.021875f, z + 0.015625f, u2, v1);
-        Tesselator_vertexUV(t, x, y, z + 0.015625f, u1, v1);
+        t->vertexUV(x + 1, y, z + 0.015625f, u1, v2);
+        t->vertexUV(x + 1, y + 1.021875f, z + 0.015625f, u2, v2);
+        t->vertexUV(x, y + 1.021875f, z + 0.015625f, u2, v1);
+        t->vertexUV(x, y, z + 0.015625f, u1, v1);
     }
     // Zp
     if (
-        self->level->vtable->isSolidRenderTile(self->level, x, y, z + 1)
-        && self->level->vtable->getTile(self->level, x, y + 1, z + 1) == 55
+        self->level->isSolidRenderTile(x, y, z + 1)
+        && self->level->getTile(x, y + 1, z + 1) == 55
     ) {
-        Tesselator_vertexUV(t, x + 1, y + 1.021875f, (z + 1) - 0.015625f, u2, v1);
-        Tesselator_vertexUV(t, x + 1, y, (z + 1) - 0.015625f, u1, v1);
-        Tesselator_vertexUV(t, x, y, (z + 1) - 0.015625f, u1, v2);
-        Tesselator_vertexUV(t, x, y + 1.021875f, (z + 1) - 0.015625f, u2, v2);
+        t->vertexUV(x + 1, y + 1.021875f, (z + 1) - 0.015625f, u2, v1);
+        t->vertexUV(x + 1, y, (z + 1) - 0.015625f, u1, v1);
+        t->vertexUV(x, y, (z + 1) - 0.015625f, u1, v2);
+        t->vertexUV(x, y + 1.021875f, (z + 1) - 0.015625f, u2, v2);
     }
     return true;
 }
 
 bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y, int z) {
-    int data = self->level->vtable->getData(self->level, x, y, z);
+    int data = self->level->getData(x, y, z);
     int delay = data >> 2;
     int dir = data & 0b0011;
-    TileRenderer_tesselateBlockInWorld(self, tile, x, y, z);
+    self->tesselateBlockInWorld(tile, x, y, z);
     // Render torches
-	Tesselator *t = &Tesselator_instance;
-	float brightness = tile->vtable->getBrightness(tile, self->level, x, y, z);
+	Tesselator *t = &Tesselator::instance;
+	float brightness = tile->getBrightness(self->level, x, y, z);
     brightness *= 256;
-	Tesselator_color(t, brightness, brightness, brightness, 255);
+	t->color(brightness, brightness, brightness, 255);
     static float delay_offset[] = {-0.0625, 0.0625, 0.1875, 0.3125};
     float tx1 = 0, tx2 = 0, tz1 = 0, tz2 = 0, ty = -0.1875;
     float txzo = -0.3125;
@@ -460,8 +460,8 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
         tx1 = delay_offset[delay] * m;
     }
     repeater_rendering_torches = true;
-    TileRenderer_tesselateTorch(self, tile, x + tx1, y + ty, z + tz1, 0, 0);
-    TileRenderer_tesselateTorch(self, tile, x + tx2, y + ty, z + tz2, 0, 0);
+    self->tesselateTorch(tile, x + tx1, y + ty, z + tz1, 0, 0);
+    self->tesselateTorch(tile, x + tx2, y + ty, z + tz2, 0, 0);
     repeater_rendering_torches = false;
     // Render rotated base
     float u = (tile->texture & 0xf) << 4, v = (tile->texture & 0xf0);
@@ -489,16 +489,16 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
         vs[3] = vs[2] = v;
         vs[0] = vs[1] = v + UV_S;
     }
-    Tesselator_vertexUV(t, x + 1, y + 0.0625f, z + 1, us[0], vs[0]);
-    Tesselator_vertexUV(t, x + 1, y + 0.0625f, z,     us[1], vs[1]);
-    Tesselator_vertexUV(t, x,     y + 0.0625f, z,     us[2], vs[2]);
-    Tesselator_vertexUV(t, x,     y + 0.0625f, z + 1, us[3], vs[3]);
+    t->vertexUV(x + 1, y + 0.0625f, z + 1, us[0], vs[0]);
+    t->vertexUV(x + 1, y + 0.0625f, z,     us[1], vs[1]);
+    t->vertexUV(x,     y + 0.0625f, z,     us[2], vs[2]);
+    t->vertexUV(x,     y + 0.0625f, z + 1, us[3], vs[3]);
     return true;
 }
 
 // Inject
-HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self, Tile *tile, int x, int y, int z)) {
-    int shape = tile->vtable->getRenderShape(tile);
+OVERWRITE_CALLS(TileRenderer_tesselateInWorld, bool, TileRenderer_tesselateInWorld_injection, (TileRenderer_tesselateInWorld_t original, TileRenderer *self, Tile *tile, int x, int y, int z)) {
+    int shape = tile->getRenderShape();
     if (shape == 47) {
         // Belts
         return TileRenderer_tesselateBeltInWorld(self, tile, x, y, z);
@@ -509,48 +509,48 @@ HOOK_FROM_CALL(0x47a58, bool, TileRenderer_tesselateInWorld, (TileRenderer *self
         // Pedestal
         return TileRenderer_tesselatePedestalInWorld(self, tile, x, y, z);
     } else if (shape == 50) {
-        int data = self->level->vtable->getData(self->level, x, y, z);
+        int data = self->level->getData(x, y, z);
         return TileRenderer_tesselatePiston(tile, x, y, z, data, mc->level);
     } else if (shape == 52) {
         return TileRenderer_tesselateDust(self, tile, x, y, z);
     } else if (shape == 53) {
         return TileRenderer_tesselateRepeater(self, tile, x, y, z);
     }
-    return TileRenderer_tesselateInWorld_original_FG6_API(self, tile, x, y, z);
+    return original(self, tile, x, y, z);
 }
-static void TileRenderer_renderGuiTile_injection(TileRenderer *self, Tile *tile, int aux) {
+static void TileRenderer_renderGuiTile_injection(TileRenderer_renderGuiTile_t original, TileRenderer *self, Tile *tile, int aux) {
     // This renders in gui slots
-    int shape = tile->vtable->getRenderShape(tile);
+    int shape = tile->getRenderShape();
     if (shape == 47) {
         // Belts
-        Tesselator_addOffset(&Tesselator_instance, -0.5, -0.5, -0.5);
-        Tesselator_begin(&Tesselator_instance, 7);
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
         TileRenderer_tesselateBeltInWorld(self, tile, -0.5f, -0.5f, -0.5f, 3);
-        Tesselator_draw(&Tesselator_instance);
-        Tesselator_addOffset(&Tesselator_instance, 0.5, 0.5, 0.5);
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else if (shape == 49) {
         // Pedestal
         TileRenderer_tesselatePedestalInWorld(self, tile, -0.5f, -0.5f, -0.5f, true);
     } else if (shape == 50) {
-        Tesselator_addOffset(&Tesselator_instance, -0.5, -0.5, -0.5);
-        Tesselator_begin(&Tesselator_instance, 7);
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
         TileRenderer_tesselatePiston(tile, 0, 0, 0, 1, NULL);
-        Tesselator_draw(&Tesselator_instance);
-        Tesselator_addOffset(&Tesselator_instance, 0.5, 0.5, 0.5);
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else {
-        TileRenderer_renderGuiTile(self, tile, aux);
+        original(self, tile, aux);
     }
 }
-HOOK_FROM_CALL(0x4ba0c, void, TileRenderer_renderTile, (TileRenderer *self, Tile *tile, int aux)) {
+OVERWRITE_CALLS(TileRenderer_renderTile, void, TileRenderer_renderTile_injection, (TileRenderer_renderTile_t original, TileRenderer *self, Tile *tile, int aux)) {
     // This renders for anything ItemInHandRenderer::renderItem uses (which includes dropped items afaik)
-    int shape = tile->vtable->getRenderShape(tile);
+    int shape = tile->getRenderShape();
     if (shape == 47) {
         // Belts
-        Tesselator_addOffset(&Tesselator_instance, -0.5, -0.5, -0.5);
-        Tesselator_begin(&Tesselator_instance, 7);
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
         TileRenderer_tesselateBeltInWorld(self, tile, 0, 0, 0, 3);
-        Tesselator_draw(&Tesselator_instance);
-        Tesselator_addOffset(&Tesselator_instance, 0.5, 0.5, 0.5);
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else if (shape == 49) {
         // Pedestal
         TileRenderer_tesselatePedestalInWorld(self, tile, -0.5f, -0.5f, -0.5f, true);
@@ -560,12 +560,12 @@ HOOK_FROM_CALL(0x4ba0c, void, TileRenderer_renderTile, (TileRenderer *self, Tile
         //TileEntityRenderer();
         TileRenderer_tesselatePiston(tile, -0.5f, -0.5f, -0.5f, 1, NULL);
     } else {
-        TileRenderer_renderTile_original_FG6_API(self, tile, aux);
+        original(self, tile, aux);
     }
 }
 
-OVERWRITE_CALLS(TileRenderer_canRender, bool, TileRenderer_canRender_injection, (int shape)) {
-    return TileRenderer_canRender(shape) || shape == 47 || shape == 49 || shape == 50;
+OVERWRITE_CALLS(TileRenderer_canRender, bool, TileRenderer_canRender_injection, (TileRenderer_canRender_t original, int shape)) {
+    return original(shape) || shape == 47 || shape == 49 || shape == 50;
 }
 
 // Belt dynamic texture
@@ -592,19 +592,19 @@ CUSTOM_VTABLE(belt_texture, DynamicTexture) {
 }
 
 static DynamicTexture *create_belt_texture() {
-    DynamicTexture *belt_texture = new DynamicTexture;
+    DynamicTexture *belt_texture = DynamicTexture::allocate();
     ALLOC_CHECK(belt_texture);
-    DynamicTexture_constructor(belt_texture, BELT_TOP_TEXTURE);
+    belt_texture->constructor(BELT_TOP_TEXTURE);
     belt_texture->vtable = get_belt_texture_vtable();
     return belt_texture;
 }
 
-HOOK_FROM_CALL(0x170b4, void, Textures_addDynamicTexture, (Textures *self, DynamicTexture *tex)) {
-    Textures_addDynamicTexture_original_FG6_API(self, tex);
+OVERWRITE_CALLS(Textures_addDynamicTexture, void, Textures_addDynamicTexture_injection, (Textures_addDynamicTexture_t original, Textures *self, DynamicTexture *tex)) {
+    original(self, tex);
 
     static bool ran = false;
     if (!ran) {
-        Textures_addDynamicTexture(self, create_belt_texture());
+        original(self, create_belt_texture());
         ran = true;
     }
 }
@@ -613,7 +613,7 @@ HOOK_FROM_CALL(0x170b4, void, Textures_addDynamicTexture, (Textures *self, Dynam
 static float w = 16, h = 16;
 void ItemRenderer_renderGuiItem2(Font *font, Textures *textures, ItemInstance *item_instance, float x, float y, float w_ /*= 16*/, float h_ /*= 16*/, bool param_5 /*=true*/) {
     w = w_; h = h_;
-    ItemRenderer_renderGuiItem_two(font, textures, item_instance, x, y, w, h, param_5);
+    ItemRenderer::renderGuiItem_two(font, textures, item_instance, x, y, w, h, param_5);
     w = h = 16;
 }
 
@@ -626,13 +626,13 @@ OVERWRITE_CALL(0x63b74, void, ItemRenderer_blit_injection, (float x, float y, fl
     float od256 = 1.f / 256.f;
     float v = (texture_y + 16) * od256;
     float u = (texture_x + 16) * od256;
-    Tesselator *t = &Tesselator_instance;
-    Tesselator_begin(t, 7);
-    Tesselator_vertexUV(t, x,     y + h, 0.0, texture_x * od256, v);
-    Tesselator_vertexUV(t, x + w, y + h, 0.0, u,                 v);
-    Tesselator_vertexUV(t, x + w, y,     0.0, u,                 texture_y * od256);
-    Tesselator_vertexUV(t, x,     y,     0.0, texture_x * od256, texture_y * od256);
-    Tesselator_draw(t);
+    Tesselator *t = &Tesselator::instance;
+    t->begin(7);
+    t->vertexUV(x,     y + h, 0.0, texture_x * od256, v);
+    t->vertexUV(x + w, y + h, 0.0, u,                 v);
+    t->vertexUV(x + w, y,     0.0, u,                 texture_y * od256);
+    t->vertexUV(x,     y,     0.0, texture_x * od256, texture_y * od256);
+    t->draw();
 }
 
 // Fix tiles
@@ -649,7 +649,7 @@ OVERWRITE_CALL(0x63a38, void, glTranslatef_injection, (float x, float y, float z
 
 __attribute__((constructor)) static void init() {
     // Tesselatation
-    overwrite_calls_manual((void *) TileRenderer_renderGuiTile, (void *) TileRenderer_renderGuiTile_injection);
+    overwrite_calls(TileRenderer_renderGuiTile, TileRenderer_renderGuiTile_injection);
 
     // Fix aux in hand bug
     uchar cmp_r7_patch[] = {0x07, 0x00, 0x57, 0xe1}; // "cmp r7,r7"

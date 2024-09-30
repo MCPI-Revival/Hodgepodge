@@ -8,13 +8,13 @@
 
 static void EnderPearl_onHit(Throwable *self, UNUSED HitResult *res) {
     if (!really_hit(self, res)) return;
-    self->vtable->remove(self);
+    self->remove();
 
     // Teleport
-    Entity *e = Level_getEntity(self->level, self->thrower_id);
+    Entity *e = self->level->getEntity(self->thrower_id);
     if (!e) return;
-    Entity_moveTo_non_virtual(e, self->x, self->y, self->z, e->yaw, e->pitch);
-    e->vtable->hurt(e, NULL, 4);
+    e->moveTo(self->x, self->y, self->z, e->yaw, e->pitch);
+    e->hurt(nullptr, 4);
 }
 
 static int EnderPearl_getEntityTypeId(UNUSED Throwable *self) {
@@ -25,7 +25,7 @@ static Throwable_vtable *get_ender_pearl_vtable() {
     static Throwable_vtable *vtable = NULL;
     if (vtable == NULL) {
         // Init
-        vtable = dup_Throwable_vtable(Throwable_vtable_base);
+        vtable = dup_vtable(Throwable_vtable_base);
         ALLOC_CHECK(vtable);
 
         // Modify
@@ -42,18 +42,18 @@ ItemInstance *EnderPearlItem_use(UNUSED Item *self, ItemInstance *item, Level *l
     }
 
     // Play the sounds
-    float f = Random_genrand_int32(&Mth__random);
+    float f = Mth::_random.genrand_int32();
     std::string name = "random.bow";
     //std::string name = "jonker";
-    Level_playSound(level, (Entity *) player, &name, 0.5, 0.4 / (f * 0.4 + 0.8));
+    level->playSound((Entity *) player, name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
     // Spawn the entity
-    Throwable *ender_pearl = new Throwable();
+    Throwable *ender_pearl = Throwable::allocate();
     ALLOC_CHECK(ender_pearl);
-    Throwable_constructor(ender_pearl, level, (Entity *) player);
+    ender_pearl->constructor(level, (Entity *) player);
     ender_pearl->vtable = get_ender_pearl_vtable();
     ender_pearl->renderer_id = PEARL_RENDER_DISPATCHER_ID;
-    Level_addEntity(level, (Entity *) ender_pearl);
+    level->addEntity((Entity *) ender_pearl);
 
     return item;
 }
@@ -62,7 +62,7 @@ static Item_vtable *get_ender_pearl_item_vtable() {
     static Item_vtable *vtable = NULL;
     if (vtable == NULL) {
         // Init
-        vtable = dup_Item_vtable(Item_vtable_base);
+        vtable = dup_vtable(Item_vtable_base);
         ALLOC_CHECK(vtable);
 
         // Modify
@@ -75,28 +75,28 @@ static Item_vtable *get_ender_pearl_item_vtable() {
 static Item *ender_pearl = NULL;
 void make_ender_pearl() {
     // Construct
-    ender_pearl = new Item();
+    ender_pearl = Item::allocate();
     ALLOC_CHECK(ender_pearl);
-    Item_constructor(ender_pearl, ENDER_PEARL_ITEM_ID - 256);
+    ender_pearl->constructor(ENDER_PEARL_ITEM_ID - 256);
 
     // Set VTable
     ender_pearl->vtable = get_ender_pearl_item_vtable();
 
     // Setup
     std::string name = "ender_pearl";
-    ender_pearl->vtable->setDescriptionId(ender_pearl, &name);
+    ender_pearl->setDescriptionId(name);
     ender_pearl->max_damage = 0;
     ender_pearl->max_stack_size = 16;
     ender_pearl->texture = ENDER_PEARL_TEXTURE_ID;
 }
 
-HOOK_FROM_CALL(0x60eb0, EntityRenderDispatcher*, EntityRenderDispatcher_constructor, (EntityRenderDispatcher *self)) {
-    EntityRenderDispatcher_constructor_original_FG6_API(self);
+OVERWRITE_CALLS(EntityRenderDispatcher_constructor, EntityRenderDispatcher*, EntityRenderDispatcher_constructor_injection, (EntityRenderDispatcher_constructor_t original, EntityRenderDispatcher *self)) {
+    original(self);
 
-    ItemSpriteRenderer *renderer = new ItemSpriteRenderer();
+    ItemSpriteRenderer *renderer = ItemSpriteRenderer::allocate();
     ALLOC_CHECK(renderer);
-    ItemSpriteRenderer_constructor(renderer, ENDER_PEARL_TEXTURE_ID);
-    EntityRenderDispatcher_assign(self, PEARL_RENDER_DISPATCHER_ID, (EntityRenderer *) renderer);
+    renderer->constructor(ENDER_PEARL_TEXTURE_ID);
+    self->assign(PEARL_RENDER_DISPATCHER_ID, (EntityRenderer *) renderer);
 
     return self;
 }

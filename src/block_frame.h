@@ -5,6 +5,6 @@
 
 void make_frame();
 
-struct FrameTileEntity : TileEntity {
+EXTEND_STRUCT(FrameTileEntity, TileEntity, struct {
     ItemInstance tile;
-};
+});

@@ -14,10 +14,10 @@
 static EntityTile *frame = NULL;
 static TileEntity *BlockFrame_newTileEntity(UNUSED EntityTile *self);
 static int BlockFrame_use(UNUSED EntityTile *self, Level *level, int x, int y, int z, Player *player) {
-    FrameTileEntity *frame_te = (FrameTileEntity *) Level_getTileEntity(level, x, y, z);
-    ItemInstance *held = Inventory_getSelected(player->inventory);
-    if (!ItemInstance_isNull(held) && held->id < 256) {
-        frame_te->tile = {.count = 1, .id = held->id, .auxiliary = held->auxiliary};
+    FrameTileEntity *frame_te = (FrameTileEntity *) level->getTileEntity(x, y, z);
+    ItemInstance *held = player->inventory->getSelected();
+    if (!held->isNull() && held->id < 256) {
+        frame_te->data.tile = {.count = 1, .id = held->id, .auxiliary = held->auxiliary};
     }
     return 1;
 }
@@ -43,13 +43,13 @@ static int BlockFrame_getTexture2(UNUSED EntityTile *self, UNUSED int face, UNUS
 static int BlockFrame_getTexture3(EntityTile *self, LevelSource *_level, int x, int y, int z, int face) {
     if (!_level) return BlockFrame_getTexture2(self, face, 0);
     Level *level = (Level *) _level;
-    FrameTileEntity *frame_te = (FrameTileEntity *) Level_getTileEntity(mc->level, x, y, z);
-    if (ItemInstance_isNull(&frame_te->tile)) {
-        return BlockFrame_getTexture2(self, face, level->vtable->getData(level, x, y, z));
+    FrameTileEntity *frame_te = (FrameTileEntity *) mc->level->getTileEntity(x, y, z);
+    if (frame_te->data.tile.isNull()) {
+        return BlockFrame_getTexture2(self, face, level->getData(x, y, z));
     }
     // Get the custom tile
-    Tile *t = Tile_tiles[frame_te->tile.id];
-    return t->vtable->getTexture2(t, face, frame_te->tile.auxiliary);
+    Tile *t = Tile::tiles[frame_te->data.tile.id];
+    return t->getTexture2(face, frame_te->data.tile.auxiliary);
 }
 
 static bool BlockFrame_isCubeShaped(UNUSED EntityTile *self) {
@@ -58,15 +58,13 @@ static bool BlockFrame_isCubeShaped(UNUSED EntityTile *self) {
 
 void make_frame() {
     // Construct
-    frame = new EntityTile();
+    frame = EntityTile::allocate();
     ALLOC_CHECK(frame);
     int texture = FRAME_TEXTURE;
-    Tile_constructor((Tile *) frame, FRAME_TILE_ID, texture, Material_stone);
-    Tile_isEntityTile[FRAME_TILE_ID] = true;
-    frame->texture = texture;
+    frame->constructor(FRAME_TILE_ID, texture, Material::stone);
 
     // Set VTable
-    frame->vtable = dup_EntityTile_vtable(EntityTile_vtable_base);
+    frame->vtable = dup_vtable(EntityTile_vtable_base);
     ALLOC_CHECK(frame->vtable);
     frame->vtable->newTileEntity = BlockFrame_newTileEntity;
     frame->vtable->use = BlockFrame_use;
@@ -78,14 +76,13 @@ void make_frame() {
     frame->vtable->isCubeShaped = BlockFrame_isCubeShaped;
 
     // Init
-    Tile_setShape_non_virtual((Tile *) frame, 0, 0, 0, 1, 0.5f, 1);
-    EntityTile_init(frame);
-    frame->vtable->setDestroyTime(frame, 2.0f);
-    frame->vtable->setExplodeable(frame, 5.0f);
-    frame->vtable->setSoundType(frame, &Tile_SOUND_WOOD);
+    frame->setShape(0, 0, 0, 1, 0.5f, 1);
+    frame->init();
+    frame->setDestroyTime(2.0f);
+    frame->setExplodeable(5.0f);
+    frame->setSoundType(Tile::SOUND_WOOD);
     frame->category = 1;
-    std::string name = "frame";
-    frame->vtable->setDescriptionId(frame, &name);
+    frame->setDescriptionId("frame");
 }
 
 // Tile entity
@@ -94,24 +91,24 @@ static bool FrameTileEntity_shouldSave(UNUSED TileEntity *self) {
 }
 
 static void FrameTileEntity_load(TileEntity *self, CompoundTag *tag) {
-    TileEntity_load_non_virtual(self, tag);
+    TileEntity_load->get(false)(self, tag);
     CompoundTag *ctag = CompoundTag_getCompound_but_not(tag, "Tile");
     if (ctag) {
-        ItemInstance *i = ItemInstance_fromTag(ctag);
+        ItemInstance *i = ItemInstance::fromTag(ctag);
         if (i) {
-            ((FrameTileEntity *) self)->tile = *i;
+            ((FrameTileEntity *) self)->data.tile = *i;
             delete i;
         }
     }
 }
 
 static bool FrameTileEntity_save(TileEntity *self, CompoundTag *tag) {
-    TileEntity_save_non_virtual(self, tag);
-    CompoundTag *ctag = new CompoundTag();
-    CompoundTag_constructor(ctag, "");
-    ItemInstance_save(&((FrameTileEntity *) self)->tile, ctag);
+    TileEntity_save->get(false)(self, tag);
+    CompoundTag *ctag = CompoundTag::allocate();
+    ctag->constructor("");
+    ((FrameTileEntity *) self)->data.tile.save(ctag);
     std::string tile = "Tile";
-    CompoundTag_put(tag, &tile, (Tag *) ctag);
+    tag->put(tile, (Tag *) ctag);
     return true;
 }
 
@@ -124,30 +121,30 @@ CUSTOM_VTABLE(frame_te, TileEntity) {
 static FrameTileEntity *make_frame_tile_entity() {
     FrameTileEntity *frame_te = new FrameTileEntity;
     ALLOC_CHECK(frame_te);
-    TileEntity_constructor(frame_te, 48);
-    frame_te->tile = {0, FRAME_TILE_ID, 0};
-    frame_te->renderer_id = 11;
-    frame_te->vtable = get_frame_te_vtable();
+    frame_te->super()->constructor(48);
+    frame_te->data.tile = {0, FRAME_TILE_ID, 0};
+    frame_te->super()->renderer_id = 11;
+    frame_te->super()->vtable = get_frame_te_vtable();
     return frame_te;
 }
 
-HOOK_FROM_CALL(0xd2544, TileEntity *, TileEntityFactory_createTileEntity, (int id)) {
+OVERWRITE_CALLS(TileEntityFactory_createTileEntity, TileEntity *, TileEntityFactory_createTileEntity_injection, (TileEntityFactory_createTileEntity_t original, int id)) {
     if (id == 48) {
-        return make_frame_tile_entity();
+        return (TileEntity *) make_frame_tile_entity();
     }
     // Call original
-    return TileEntityFactory_createTileEntity_original_FG6_API(id);
+    return original(id);
 }
 
-HOOK_FROM_CALL(0x149b0, void, TileEntity_initTileEntities, ()) {
+OVERWRITE_CALLS(TileEntity_initTileEntities, void, TileEntity_initTileEntities_injection, (TileEntity_initTileEntities_t original)) {
     // Call original
-    TileEntity_initTileEntities_original_FG6_API();
+    original();
     // Add
     std::string str = "Frame";
-    TileEntity_setId(48, &str);
+    TileEntity::setId(48, str);
 }
 
 // Tile again
 static TileEntity *BlockFrame_newTileEntity(UNUSED EntityTile *self) {
-    return make_frame_tile_entity();
+    return (TileEntity *) make_frame_tile_entity();
 }

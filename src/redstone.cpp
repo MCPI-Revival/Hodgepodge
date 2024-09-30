@@ -24,36 +24,36 @@ int RedStoneOreTile_getResource_injection(UNUSED Tile *t, UNUSED int data, UNUSE
 }
 
 static bool canBePlacedOn(Level *level, int x, int y, int z) {
-    int id = level->vtable->getTile(level, x, y, z);
+    int id = level->getTile(x, y, z);
     // Glass
     return id == 20
         // Double slab
         || id == 43
         // Slab
-        || (id == 44 && level->vtable->getData(level, x, y, z) > 6)
-        || level->vtable->isSolidRenderTile(level, x, y, z);
+        || (id == 44 && level->getData(x, y, z) > 6)
+        || level->isSolidRenderTile(x, y, z);
 }
 
 static void make_redstone_tileitems() {
     // Redstone dust
-    redstone = (Item *) new TilePlanterItem();
-    Item_constructor(redstone, REDSTONE_ID - 256);
+    redstone = (Item *) TilePlanterItem::allocate();
+    redstone->constructor(REDSTONE_ID - 256);
 
     redstone->vtable = (Item_vtable *) TilePlanterItem_vtable_base;
     ((TilePlanterItem *) redstone)->tile_id = redstone_wire->id;
     std::string name = "redstoneDust";
-    redstone->vtable->setDescriptionId(redstone, &name);
+    redstone->setDescriptionId(name);
     redstone->category = 2;
     redstone->texture = 56;
 
     // Repeater
-    repeater_item = (Item *) new TilePlanterItem();
-    Item_constructor(repeater_item, REPEATER_ID - 256);
+    repeater_item = (Item *) TilePlanterItem::allocate();
+    repeater_item->constructor(REPEATER_ID - 256);
 
     repeater_item->vtable = (Item_vtable *) TilePlanterItem_vtable_base;
     ((TilePlanterItem *) repeater_item)->tile_id = inactive_repeater->id;
     name = "repeater";
-    repeater_item->vtable->setDescriptionId(repeater_item, &name);
+    repeater_item->setDescriptionId(name);
     repeater_item->category = 2;
     repeater_item->texture = 86;
 }
@@ -88,16 +88,16 @@ static int RedstoneWire_getResourceCount(UNUSED Tile *self, UNUSED Random *rando
 }
 
 static int RedstoneWire_getColor(UNUSED Tile *self, LevelSource *level_source, int x, int y, int z) {
-    int data = level_source->vtable->getData(level_source, x, y, z) * 7;
+    int data = level_source->getData(x, y, z) * 7;
     if (data == 0) return 0x660000;
     return 0x880000 + (data << 16);
 }
 
 static int RedstoneWire_maxToCur(Level *level, int x, int y, int z, int other) {
-    if (level->vtable->getTile(level, x, y, z) != 55) {
+    if (level->getTile(x, y, z) != 55) {
         return other;
     } else {
-        int data = level->vtable->getData(level, x, y, z);
+        int data = level->getData(x, y, z);
         return data > other ? data : other;
     }
 }
@@ -105,10 +105,10 @@ static int RedstoneWire_maxToCur(Level *level, int x, int y, int z, int other) {
 static std::vector<Vec3> wire_neighbors = {};
 static bool checking_power = false;
 static void RedstoneWire_update(Level *level, int x, int y, int z, int x2, int y2, int z2) {
-    int data = level->vtable->getData(level, x, y, z);
+    int data = level->getData(x, y, z);
     int power = 0;
     checking_power = true;
-    bool powered = Level_hasNeighborSignal(level, x, y, z);
+    bool powered = level->hasNeighborSignal(x, y, z);
     checking_power = false;
     if (powered) {
         power = 15;
@@ -127,15 +127,15 @@ static void RedstoneWire_update(Level *level, int x, int y, int z, int x2, int y
                 power = RedstoneWire_maxToCur(level, xo, y, zo, power);
             }
             if (
-                level->vtable->isSolidRenderTile(level, xo, y, zo)
-                && !level->vtable->isSolidRenderTile(level, x, y + 1, z)
+                level->isSolidRenderTile(xo, y, zo)
+                && !level->isSolidRenderTile(x, y + 1, z)
             ) {
                 // Diagonal, +y
                 if (xo != x2 || y + 1 != y2 || zo != z2) {
                     power = RedstoneWire_maxToCur(level, xo, y + 1, zo, power);
                 }
             } else if (
-                !level->vtable->isSolidRenderTile(level, xo, y, zo)
+                !level->isSolidRenderTile(xo, y, zo)
                 && (xo != x2 || y - 1 != y2 || zo != z2)
             ) {
                 // Diagonal, -y
@@ -153,7 +153,7 @@ static void RedstoneWire_update(Level *level, int x, int y, int z, int x2, int y
     if (power != data) {
         // Set data
         //level->no_update = true;
-        Level_setData(level, x, y, z, power);
+        level->setData(x, y, z, power);
         //Level_setTileDirty(level, x, y, z);
         //level->no_update = false;
 
@@ -165,18 +165,18 @@ static void RedstoneWire_update(Level *level, int x, int y, int z, int x2, int y
             else if (side == 2) zo--;
             else if (side == 3) zo++;
 
-            if (level->vtable->isSolidRenderTile(level, xo, y, zo)) {
+            if (level->isSolidRenderTile(xo, y, zo)) {
                 yo += 2;
             }
             int cur = RedstoneWire_maxToCur(level, xo, y, zo, -1);
-            power = level->vtable->getData(level, x, y, z);
+            power = level->getData(x, y, z);
             if (power > 0) power--;
             if (cur >= 0 && cur != power) {
                 RedstoneWire_update(level, xo, y, zo, x, y, z);
             }
 
             cur = RedstoneWire_maxToCur(level, xo, yo, zo, -1);
-            power = level->vtable->getData(level, x, y, z);
+            power = level->getData(x, y, z);
             if (power > 0) power--;
             if (cur >= 0 && cur != power) {
                 RedstoneWire_update(level, xo, yo, zo, x, y, z);
@@ -200,13 +200,13 @@ static void RedstoneWire_propagate(Level *level, int x, int y, int z) {
     std::vector<Vec3> neighbors = wire_neighbors;
     wire_neighbors = {};
     for (const Vec3 &i : neighbors) {
-        Level_updateNearbyTiles(level, i.x, i.y, i.z, 55);
+        level->updateNearbyTiles(i.x, i.y, i.z, 55);
     }
 }
 
 static void RedstoneWire_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
     if (!RedstoneWire_mayPlace2(self, level, x, y, z)) {
-        Level_setTile(level, x, y, z, 0);
+        level->setTile(x, y, z, 0);
         // TODO drop on ground
         return;
     } else {
@@ -215,25 +215,25 @@ static void RedstoneWire_neighborChanged(Tile *self, Level *level, int x, int y,
 }
 
 static void updateWires(Level *level, int x, int y, int z) {
-    if (level->vtable->getTile(level, x, y, z) != 55) return;
-    Level_updateNearbyTiles(level, x,     y,     z,     55);
-    Level_updateNearbyTiles(level, x - 1, y,     z,     55);
-    Level_updateNearbyTiles(level, x + 1, y,     z,     55);
-    Level_updateNearbyTiles(level, x,     y - 1, z,     55);
-    Level_updateNearbyTiles(level, x,     y + 1, z,     55);
-    Level_updateNearbyTiles(level, x,     y,     z - 1, 55);
-    Level_updateNearbyTiles(level, x,     y,     z + 1, 55);
+    if (level->getTile(x, y, z) != 55) return;
+    level->updateNearbyTiles(x,     y,     z,     55);
+    level->updateNearbyTiles(x - 1, y,     z,     55);
+    level->updateNearbyTiles(x + 1, y,     z,     55);
+    level->updateNearbyTiles(x,     y - 1, z,     55);
+    level->updateNearbyTiles(x,     y + 1, z,     55);
+    level->updateNearbyTiles(x,     y,     z - 1, 55);
+    level->updateNearbyTiles(x,     y,     z + 1, 55);
 }
 
 #define UPDATE_IF_SOLID(x2, y2, z2) \
-    if (level->vtable->isSolidRenderTile(level, (x2), (y2), (z2))) { \
+    if (level->isSolidRenderTile((x2), (y2), (z2))) { \
         updateWires(level, (x2), (y2) + 1, (z2)); \
     } else { \
         updateWires(level, (x2), (y2) - 1, (z2)); \
     }
 void RedstoneWire_onPlaceOrRemove(UNUSED Tile *self, Level *level, int x, int y, int z) {
-    Level_updateNearbyTiles(level, x, y + 1, z, 55);
-    Level_updateNearbyTiles(level, x, y - 1, z, 55);
+    level->updateNearbyTiles(x, y + 1, z, 55);
+    level->updateNearbyTiles(x, y - 1, z, 55);
     RedstoneWire_propagate(level, x, y, z);
     updateWires(level, x - 1, y, z);
     updateWires(level, x + 1, y, z);
@@ -247,16 +247,16 @@ void RedstoneWire_onPlaceOrRemove(UNUSED Tile *self, Level *level, int x, int y,
 #undef UPDATE_IF_SOLID
 
 bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side) {
-    int id = level->vtable->getTile(level, x, y, z);
+    int id = level->getTile(x, y, z);
     if (id == 55) {
         return true;
     } else if (id == 0) {
         return false;
-    } else if (Tile_tiles[id]->vtable->isSignalSource(Tile_tiles[id])) {
+    } else if (Tile::tiles[id]->isSignalSource()) {
         return true;
     } else if (id == inactive_repeater->id || id == active_repeater->id) {
         // Yessir, another special case!
-        int dir = level->vtable->getData(level, x, y, z) & 0b0011;
+        int dir = level->getData(x, y, z) & 0b0011;
         return (dir ^ 2) == side;
     }
     return false;
@@ -264,19 +264,19 @@ bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side) {
 
 static bool RedstoneWire_getSignal2(UNUSED Tile *self, LevelSource *level, int x, int y, int z, int side) {
     if (checking_power) return false;
-    if (level->vtable->getData(level, x, y, z) == 0) return false;
+    if (level->getData(x, y, z) == 0) return false;
     // The block under it is always powered
 
     if (side == 1) return true;
-    bool on_xm = (canWireConnectTo(level, x - 1, y, z, 1) || (!level->vtable->isSolidRenderTile(level, x - 1, y, z) && canWireConnectTo(level, x - 1, y - 1, z, -1)));
-    bool on_xp = (canWireConnectTo(level, x + 1, y, z, 3) || (!level->vtable->isSolidRenderTile(level, x + 1, y, z) && canWireConnectTo(level, x + 1, y - 1, z, -1)));
-    bool on_zm = (canWireConnectTo(level, x, y, z - 1, 2) || (!level->vtable->isSolidRenderTile(level, x, y, z - 1) && canWireConnectTo(level, x, y - 1, z - 1, -1)));
-    bool on_zp = (canWireConnectTo(level, x, y, z + 1, 0) || (!level->vtable->isSolidRenderTile(level, x, y, z + 1) && canWireConnectTo(level, x, y - 1, z + 1, -1)));
-    if (!level->vtable->isSolidRenderTile(level, x, y + 1, z)) {
-        if (level->vtable->isSolidRenderTile(level, x - 1, y, z) && canWireConnectTo(level, x - 1, y + 1, z, -1)) on_xm = true;
-        if (level->vtable->isSolidRenderTile(level, x + 1, y, z) && canWireConnectTo(level, x + 1, y + 1, z, -1)) on_xp = true;
-        if (level->vtable->isSolidRenderTile(level, x, y, z - 1) && canWireConnectTo(level, x, y + 1, z - 1, -1)) on_zm = true;
-        if (level->vtable->isSolidRenderTile(level, x, y, z + 1) && canWireConnectTo(level, x, y + 1, z + 1, -1)) on_zp = true;
+    bool on_xm = (canWireConnectTo(level, x - 1, y, z, 1) || (!level->isSolidRenderTile(x - 1, y, z) && canWireConnectTo(level, x - 1, y - 1, z, -1)));
+    bool on_xp = (canWireConnectTo(level, x + 1, y, z, 3) || (!level->isSolidRenderTile(x + 1, y, z) && canWireConnectTo(level, x + 1, y - 1, z, -1)));
+    bool on_zm = (canWireConnectTo(level, x, y, z - 1, 2) || (!level->isSolidRenderTile(x, y, z - 1) && canWireConnectTo(level, x, y - 1, z - 1, -1)));
+    bool on_zp = (canWireConnectTo(level, x, y, z + 1, 0) || (!level->isSolidRenderTile(x, y, z + 1) && canWireConnectTo(level, x, y - 1, z + 1, -1)));
+    if (!level->isSolidRenderTile(x, y + 1, z)) {
+        if (level->isSolidRenderTile(x - 1, y, z) && canWireConnectTo(level, x - 1, y + 1, z, -1)) on_xm = true;
+        if (level->isSolidRenderTile(x + 1, y, z) && canWireConnectTo(level, x + 1, y + 1, z, -1)) on_xp = true;
+        if (level->isSolidRenderTile(x, y, z - 1) && canWireConnectTo(level, x, y + 1, z - 1, -1)) on_zm = true;
+        if (level->isSolidRenderTile(x, y, z + 1) && canWireConnectTo(level, x, y + 1, z + 1, -1)) on_zp = true;
     }
     if (!on_zm && !on_xp && !on_xm && !on_zp && side >= 2 && side <= 5) return true;
     if (side == 2 && on_zm && !on_xm && !on_xp) return true;
@@ -293,14 +293,14 @@ static bool RedstoneWire_getDirectSignal(Tile *self, Level *level, int x, int y,
 static void make_repeater(int id);
 void make_redstone_wire() {
     // Redstone blocks
-    redstone_wire = new Tile();
+    redstone_wire = Tile::allocate();
     ALLOC_CHECK(redstone_wire);
     int texture = 164;
-    Tile_constructor(redstone_wire, 55, texture, Material_glass);
+    redstone_wire->constructor(55, texture, Material::glass);
     redstone_wire->texture = texture;
 
     // Set VTable
-    redstone_wire->vtable = dup_Tile_vtable(Tile_vtable_base);
+    redstone_wire->vtable = dup_vtable(Tile_vtable_base);
     ALLOC_CHECK(redstone_wire->vtable);
     redstone_wire->vtable->isSignalSource = RedstoneWire_isSignalSource;
     //redstone_wire->vtable->getSignal = RedstoneWire_getSignal;
@@ -320,13 +320,13 @@ void make_redstone_wire() {
     redstone_wire->vtable->onRemove = RedstoneWire_onPlaceOrRemove;
 
     // Init
-    Tile_init(redstone_wire);
-    redstone_wire->vtable->setDestroyTime(redstone_wire, 0.0f);
-    redstone_wire->vtable->setExplodeable(redstone_wire, 0.0f);
+    redstone_wire->init();
+    redstone_wire->setDestroyTime(0.0f);
+    redstone_wire->setExplodeable(0.0f);
     redstone_wire->category = 4;
     std::string name = "redstone";
-    redstone_wire->vtable->setDescriptionId(redstone_wire, &name);
-    redstone_wire->vtable->setShape(redstone_wire, 0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
+    redstone_wire->setDescriptionId(name);
+    redstone_wire->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
 
     make_repeater(93);
     make_repeater(94);
@@ -353,7 +353,7 @@ static bool Repeater_mayPlace2(UNUSED Tile *self, Level *level, int x, int y, in
 }
 
 static bool ActiveRepeater_getSignal2(UNUSED Tile *self, LevelSource *level, int x, int y, int z, int side) {
-    int dir = level->vtable->getData(level, x, y, z) & 0b0011;
+    int dir = level->getData(x, y, z) & 0b0011;
     return (dir == 0 && side == 3)
         || (dir == 1 && side == 4)
         || (dir == 2 && side == 2)
@@ -371,7 +371,7 @@ static int Repeater_getTexture1(Tile *self) {
 }
 
 static bool Repeater_checkPower(Level *level, int x, int y, int z, int data = -1) {
-    if (data == -1) data = level->vtable->getData(level, x, y, z);
+    if (data == -1) data = level->getData(x, y, z);
     data &= 0b11;
     static constexpr int oxzs[][3] = {
         {0, 1, 3},
@@ -381,54 +381,54 @@ static bool Repeater_checkPower(Level *level, int x, int y, int z, int data = -1
     };
     x += oxzs[data][0];
     z += oxzs[data][1];
-    if (Level_getSignal(level, x, y, z, oxzs[data][2])) {
+    if (level->getSignal(x, y, z, oxzs[data][2])) {
         return true;
     }
-    return level->vtable->getTile(level, x, y, z) == 55 && level->vtable->getData(level, x, y, z);
+    return level->getTile(x, y, z) == 55 && level->getData(x, y, z);
 }
 
 static void Repeater_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
     if (!Repeater_mayPlace2(self, level, x, y, z)) {
-        Level_setTile(level, x, y, z, 0);
+        level->setTile(x, y, z, 0);
         // TODO drop on ground
         return;
     }
     // Delay
-    int data = level->vtable->getData(level, x, y, z);
+    int data = level->getData(x, y, z);
     bool is_power = self->id == active_repeater->id;
     bool may_power = Repeater_checkPower(level, x, y, z, data);
     if (is_power != may_power) {
         int delay = (data & 0b1100) >> 1;
-        Level_addToTickNextTick(level, x, y, z, self->id, delay + 2);
+        level->addToTickNextTick(x, y, z, self->id, delay + 2);
     }
 }
 
-static void Repeater_tick(Tile *self, Level *level, int x, int y, int z) {
-    int data = level->vtable->getData(level, x, y, z);
+static void Repeater_tick(Tile *self, Level *level, int x, int y, int z, UNUSED Random *random) {
+    int data = level->getData(x, y, z);
     bool is_power = self->id == active_repeater->id;
     bool may_power = Repeater_checkPower(level, x, y, z, data);
     if (is_power && !may_power) {
-        Level_setTileAndData(level, x, y, z, inactive_repeater->id, data);
+        level->setTileAndData(x, y, z, inactive_repeater->id, data);
     } else if (!is_power) {
-        Level_setTileAndData(level, x, y, z, active_repeater->id, data);
+        level->setTileAndData(x, y, z, active_repeater->id, data);
         // Just because it isn't powered doesn't mean it wasn't
         // and if it was then it should, because then it is.
         // Then this makes it that it is, so then later check
         // the should and is, if not it can always be turned off
         if (!may_power) {
             int delay = (data & 0b1100) >> 1;
-            Level_addToTickNextTick(level, x, y, z, active_repeater->id, delay + 2);
+            level->addToTickNextTick(x, y, z, active_repeater->id, delay + 2);
         }
     }
 }
 
 static void Repeater_onPlace(Tile *self, Level *level, int x, int y, int z) {
-    Level_updateNearbyTiles(level, x + 1, y, z, self->id);
-    Level_updateNearbyTiles(level, x - 1, y, z, self->id);
-    Level_updateNearbyTiles(level, x, y, z + 1, self->id);
-    Level_updateNearbyTiles(level, x, y, z - 1, self->id);
-    Level_updateNearbyTiles(level, x, y - 1, z, self->id);
-    Level_updateNearbyTiles(level, x, y + 1, z, self->id);
+    level->updateNearbyTiles(x + 1, y, z, self->id);
+    level->updateNearbyTiles(x - 1, y, z, self->id);
+    level->updateNearbyTiles(x, y, z + 1, self->id);
+    level->updateNearbyTiles(x, y, z - 1, self->id);
+    level->updateNearbyTiles(x, y - 1, z, self->id);
+    level->updateNearbyTiles(x, y + 1, z, self->id);
 }
 
 static void Repeater_setPlacedBy(UNUSED Tile *self, Level *level, int x, int y, int z, Mob *placer) {
@@ -442,19 +442,19 @@ static void Repeater_setPlacedBy(UNUSED Tile *self, Level *level, int x, int y, 
     } else if (face == 3) {
         face = 3;
     }
-    Level_setData(level, x, y, z, face);
+    level->setData(x, y, z, face);
     // Check power
-    if (Repeater_checkPower(level, x, y, z, level->vtable->getData(level, x, y, z))) {
-        Level_addToTickNextTick(level, x, y, z, active_repeater->id, 1);
+    if (Repeater_checkPower(level, x, y, z, level->getData(x, y, z))) {
+        level->addToTickNextTick(x, y, z, active_repeater->id, 1);
     }
 }
 
 static int Repeater_use(UNUSED Tile *self, Level *level, int x, int y, int z, UNUSED Player *player) {
-    int dir = level->vtable->getData(level, x, y, z);
+    int dir = level->getData(x, y, z);
     int power = dir >> 2;
     power = (power + 1) & 0b11;
     dir = (dir & 0b0011) | (power << 2);
-    Level_setData(level, x, y, z, dir);
+    level->setData(x, y, z, dir);
     return 1;
 };
 
@@ -464,14 +464,14 @@ int Repeater_getResource(UNUSED Tile *t, UNUSED int data, UNUSED Random *random)
 
 static void make_repeater(int id) {
     // Redstone blocks
-    Tile *repeater = new Tile();
+    Tile *repeater = Tile::allocate();
     ALLOC_CHECK(repeater);
     int texture = 131 + (id == 94)*16;
-    Tile_constructor(repeater, id, texture, Material_glass);
+    repeater->constructor(id, texture, Material::glass);
     repeater->texture = texture;
 
     // Set VTable
-    repeater->vtable = dup_Tile_vtable(Tile_vtable_base);
+    repeater->vtable = dup_vtable(Tile_vtable_base);
     ALLOC_CHECK(repeater->vtable);
     // BLUF: Repeaters are a hardcoded special case and I'm mad
     // "Something doesn't fit with the current system? Hardcode a special case
@@ -500,13 +500,13 @@ static void make_repeater(int id) {
     repeater->vtable->getRenderLayer = RedstoneWire_getRenderLayer;
 
     // Init
-    Tile_init(repeater);
-    repeater->vtable->setDestroyTime(repeater, 0.0f);
-    repeater->vtable->setExplodeable(repeater, 0.0f);
+    repeater->init();
+    repeater->setDestroyTime(0.0f);
+    repeater->setExplodeable(0.0f);
     repeater->category = 4;
     std::string name = "repeater";
-    repeater->vtable->setDescriptionId(repeater, &name);
-    repeater->vtable->setShape(repeater, 0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
+    repeater->setDescriptionId(name);
+    repeater->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
 
     (id == 93 ? inactive_repeater : active_repeater) = repeater;
 }
@@ -526,12 +526,12 @@ static bool ActiveRedstoneBlock_getDirectSignal(UNUSED Tile *self, UNUSED Level 
 }
 
 void ActiveRedstoneBlock_onPlaceOrRemove(Tile *self, Level *level, int x, int y, int z) {
-    Level_updateNearbyTiles(level, x, y - 1, z, self->id);
-    Level_updateNearbyTiles(level, x, y + 1, z, self->id);
-    Level_updateNearbyTiles(level, x - 1, y, z, self->id);
-    Level_updateNearbyTiles(level, x + 1, y, z, self->id);
-    Level_updateNearbyTiles(level, x, y, z - 1, self->id);
-    Level_updateNearbyTiles(level, x, y, z + 1, self->id);
+    level->updateNearbyTiles(x, y - 1, z, self->id);
+    level->updateNearbyTiles(x, y + 1, z, self->id);
+    level->updateNearbyTiles(x - 1, y, z, self->id);
+    level->updateNearbyTiles(x + 1, y, z, self->id);
+    level->updateNearbyTiles(x, y, z - 1, self->id);
+    level->updateNearbyTiles(x, y, z + 1, self->id);
 }
 
 static bool RedstoneBlock_getSignal2(UNUSED Tile *self, UNUSED LevelSource *level, UNUSED int x, UNUSED int y, UNUSED int z, UNUSED int direction) {
@@ -540,13 +540,13 @@ static bool RedstoneBlock_getSignal2(UNUSED Tile *self, UNUSED LevelSource *leve
 
 void make_redstone_torch();
 void make_redstone_block(int id, int texture) {
-    Tile *block = new Tile();
+    Tile *block = Tile::allocate();
     ALLOC_CHECK(block);
-    Tile_constructor(block, id, texture, Material_glass);
+    block->constructor(id, texture, Material::glass);
     block->texture = texture;
 
     // Set VTable
-    block->vtable = dup_Tile_vtable(Tile_vtable_base);
+    block->vtable = dup_vtable(Tile_vtable_base);
     ALLOC_CHECK(block->vtable);
     block->vtable->isSignalSource = RedstoneBlock_isSignalSource;
     block->vtable->getSignal = RedstoneBlock_getSignal;
@@ -558,13 +558,13 @@ void make_redstone_block(int id, int texture) {
     }
 
     // Init
-    Tile_init(block);
-    block->vtable->setDestroyTime(block, 2.0f);
-    block->vtable->setExplodeable(block, 10.0f);
-    block->vtable->setSoundType(block, &Tile_SOUND_STONE);
+    block->init();
+    block->setDestroyTime(2.0f);
+    block->setExplodeable(10.0f);
+    block->setSoundType(Tile::SOUND_STONE);
     block->category = 4;
     std::string name = id == 152 ? "redstone_block" : "active_redstone_block";
-    block->vtable->setDescriptionId(block, &name);
+    block->setDescriptionId(name);
 
     if (id == 152) {
         redstone_block = block;
@@ -587,7 +587,7 @@ static int RedstoneTorch_getRenderShape(UNUSED Tile *self) {
 }
 
 static bool RedstoneTorch_getSignal2(UNUSED Tile *self, LevelSource *level, int x, int y, int z, int side) {
-    int data = level->vtable->getData(level, x, y, z);
+    int data = level->getData(x, y, z);
     // Inactive torch
     if (data & 0b1000) return false;
     // Check side
@@ -614,38 +614,38 @@ static void RedstoneTorch_tick(Tile *self, Level *level, int x, int y, int z) {
         torchUpdates.remove(0);
     }
 #else
-static void RedstoneTorch_tick(Tile *self, Level *level, int x, int y, int z) {
+static void RedstoneTorch_tick(Tile *self, Level *level, int x, int y, int z, UNUSED Random *random) {
 #endif
     // Check if powered
     int data = level->vtable->getData(level, x, y, z);
     data &= 0b0111;
     int dm6x = (6 - data) ^ 1;
-    bool powered = (data == 1 && Level_getSignal(level, x - 1, y, z, dm6x))
-        || (data == 2 && Level_getSignal(level, x + 1, y, z, dm6x))
-        || (data == 3 && Level_getSignal(level, x, y, z - 1, dm6x))
-        || (data == 4 && Level_getSignal(level, x, y, z + 1, dm6x))
-        || (data == 5 && Level_getSignal(level, x, y - 1, z, dm6x));
+    bool powered = (data == 1 && level->getSignal(x - 1, y, z, dm6x))
+        || (data == 2 && level->getSignal(x + 1, y, z, dm6x))
+        || (data == 3 && level->getSignal(x, y, z - 1, dm6x))
+        || (data == 4 && level->getSignal(x, y, z + 1, dm6x))
+        || (data == 5 && level->getSignal(x, y - 1, z, dm6x));
     // Set data
     data |= powered << 3;
-    if (level->vtable->getData(level, x, y, z) != data) {
-        Level_setTileAndData(level, x, y, z, self->id, data);
+    if (level->getData(x, y, z) != data) {
+        level->setTileAndData(x, y, z, self->id, data);
     }
 }
 
 static void RedstoneTorch_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
-    Level_addToTickNextTick(level, x, y, z, self->id, 20);
+    level->addToTickNextTick(x, y, z, self->id, 20);
 }
 
 void RedstoneTorch_onPlaceOrRemove(Tile *self, Level *level, int x, int y, int z) {
-    int data = level->vtable->getData(level, x, y, z);
+    int data = level->getData(x, y, z);
     data &= 0b1000;
     if (!data) return;
-    Level_updateNearbyTiles(level, x, y - 1, z, self->id);
-    Level_updateNearbyTiles(level, x, y + 1, z, self->id);
-    Level_updateNearbyTiles(level, x - 1, y, z, self->id);
-    Level_updateNearbyTiles(level, x + 1, y, z, self->id);
-    Level_updateNearbyTiles(level, x, y, z - 1, self->id);
-    Level_updateNearbyTiles(level, x, y, z + 1, self->id);
+    level->updateNearbyTiles(x, y - 1, z, self->id);
+    level->updateNearbyTiles(x, y + 1, z, self->id);
+    level->updateNearbyTiles(x - 1, y, z, self->id);
+    level->updateNearbyTiles(x + 1, y, z, self->id);
+    level->updateNearbyTiles(x, y, z - 1, self->id);
+    level->updateNearbyTiles(x, y, z + 1, self->id);
 }
 
 static void RedstoneTorch_setPlacedBy(UNUSED Tile *self, Level *level, int x, int y, int z, Mob *placer) {
@@ -660,7 +660,7 @@ static void RedstoneTorch_setPlacedBy(UNUSED Tile *self, Level *level, int x, in
         face = 4;
     }
     if (placer->pitch < -55) face = 1;
-    Level_setData(level, x, y, z, face);
+    level->setData(x, y, z, face);
 }
 
 int RedstoneTorch_getTexture1(UNUSED Tile *self) {
@@ -674,19 +674,19 @@ int RedstoneTorch_getTexture2(UNUSED Tile *self, UNUSED int face, int data) {
 }
 
 int RedstoneTorch_getTexture3(Tile *self, LevelSource *level, int x, int y, int z, int face) {
-    return RedstoneTorch_getTexture2(self, face, level->vtable->getData(level, x, y, z));
+    return RedstoneTorch_getTexture2(self, face, level->getData(x, y, z));
 }
 
 void make_redstone_torch() {
     // Redstone blocks
-    redstone_torch = new Tile();
+    redstone_torch = Tile::allocate();
     ALLOC_CHECK(redstone_torch);
     int texture = 3+16*7;
-    Tile_constructor(redstone_torch, 75, texture, Material_wood);
+    redstone_torch->constructor(75, texture, Material::wood);
     redstone_torch->texture = texture;
 
     // Set VTable
-    redstone_torch->vtable = dup_Tile_vtable(Tile_vtable_base);
+    redstone_torch->vtable = dup_vtable(Tile_vtable_base);
     ALLOC_CHECK(redstone_torch->vtable);
     // Boilerplate stolen from other tiles
     redstone_torch->vtable->isSignalSource = RedstoneBlock_isSignalSource;
@@ -709,21 +709,21 @@ void make_redstone_torch() {
     redstone_torch->vtable->onRemove = RedstoneTorch_onPlaceOrRemove;
 
     // Init
-    Tile_init(redstone_torch);
-    redstone_torch->vtable->setDestroyTime(redstone_torch, 0.0f);
-    redstone_torch->vtable->setExplodeable(redstone_torch, 0.0f);
+    redstone_torch->init();
+    redstone_torch->setDestroyTime(0.0f);
+    redstone_torch->setExplodeable(0.0f);
     redstone_torch->category = 4;
     std::string name = "redstone_torch";
-    redstone_torch->vtable->setDescriptionId(redstone_torch, &name);
+    redstone_torch->setDescriptionId(name);
 
 }
 
 static void Lamp_neighborChanged(Tile *self, Level *level, int x, int y, int z, UNUSED int neighborId) {
-    bool powered = Level_hasDirectSignal(level, x, y, z) || Level_hasNeighborSignal(level, x, y, z);
+    bool powered = level->hasDirectSignal(x, y, z) || level->hasNeighborSignal(x, y, z);
     if (!powered && self->id == active_lamp->id) {
-        Level_setTile(level, x, y, z, lamp->id);
+        level->setTile(x, y, z, lamp->id);
     } else if (powered && self->id == lamp->id) {
-        Level_setTile(level, x, y, z, active_lamp->id);
+        level->setTile(x, y, z, active_lamp->id);
     }
 }
 
@@ -732,20 +732,20 @@ static void Lamp_onPlace(Tile *self, Level *level, int x, int y, int z) {
 }
 
 void make_lamp(int id, bool active) {
-    Tile *_lamp = new Tile();
+    Tile *_lamp = Tile::allocate();
     ALLOC_CHECK(redstone_torch);
     int texture = (11+16*11) + active;
-    Tile_constructor(_lamp, id, texture, Material_glass);
+    _lamp->constructor(id, texture, Material::glass);
     _lamp->texture = texture;
 
-    _lamp->vtable = dup_Tile_vtable(Tile_vtable_base);
+    _lamp->vtable = dup_vtable(Tile_vtable_base);
     ALLOC_CHECK(_lamp->vtable);
-    if (active) Tile_lightEmission[id] = 300;
+    if (active) Tile::lightEmission[id] = 300;
     _lamp->vtable->neighborChanged = Lamp_neighborChanged;
     _lamp->vtable->onPlace = Lamp_onPlace;
 
-    Tile_init(_lamp);
-    _lamp->vtable->setDestroyTime(_lamp, 0.3f);
+    _lamp->init();
+    _lamp->setDestroyTime(0.3f);
     _lamp->category = 4;
     if (active) {
         active_lamp = _lamp;
@@ -755,10 +755,10 @@ void make_lamp(int id, bool active) {
 }
 
 bool Level_getSignal_isSolidBlockingTile_injection(Level *level, int x, int y, int z) {
-    int id = level->vtable->getTile(level, x, y, z);
+    int id = level->getTile(x, y, z);
     if (id == 152) return false;
     // Call original
-    return level->vtable->isSolidBlockingTile(level, x, y, z);
+    return level->isSolidBlockingTile(x, y, z);
 }
 
 __attribute__((constructor)) static void init() {

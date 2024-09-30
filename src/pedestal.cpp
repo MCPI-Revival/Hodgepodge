@@ -16,12 +16,12 @@ static EntityTile *pedestal = NULL;
 static TileEntity *Pedestal_newTileEntity(UNUSED EntityTile *self);
 static int Pedestal_use(UNUSED EntityTile *self, Level *level, int x, int y, int z, Player *player) {
     // This will implicitly make the tile entity, awesome!
-    PedestalTileEntity *pedestal_te = (PedestalTileEntity *) Level_getTileEntity(level, x, y, z);
-    ItemInstance *held = Inventory_getSelected(player->inventory);
-    if (ItemInstance_isNull(&pedestal_te->item)) {
+    PedestalTileEntity *pedestal_te = (PedestalTileEntity *) level->getTileEntity(x, y, z);
+    ItemInstance *held = player->inventory->getSelected();
+    if (pedestal_te->data.item.isNull()) {
         // Take from player
         if (held && held->count) {
-            pedestal_te->item = {.count = 1, .id = held->id, .auxiliary = held->auxiliary};
+            pedestal_te->data.item = {.count = 1, .id = held->id, .auxiliary = held->auxiliary};
             if (!player->infinite_items) {
                 held->count -= 1;
             }
@@ -34,15 +34,15 @@ static int Pedestal_use(UNUSED EntityTile *self, Level *level, int x, int y, int
     } else {
         // Give to the player
         Inventory *inventory = player->inventory;
-        if (!inventory->vtable->add(inventory, &pedestal_te->item)) {
+        if (!inventory->add(&pedestal_te->data.item)) {
             // Drop on the ground
-            ItemEntity *item_entity = (ItemEntity *) EntityFactory_CreateEntity(64, level);
+            ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
             ALLOC_CHECK(item_entity);
-            ItemEntity_constructor(item_entity, level, x + 0.5f, y + 1, z + 0.5f, &pedestal_te->item);
-            Entity_moveTo_non_virtual((Entity *) item_entity, x + 0.5f, y + 1, z + 0.5f, 0, 0);
-            Level_addEntity(level, (Entity *) item_entity);
+            item_entity->constructor(level, x + 0.5f, y + 1, z + 0.5f, pedestal_te->data.item);
+            item_entity->moveTo(x + 0.5f, y + 1, z + 0.5f, 0, 0);
+            level->addEntity((Entity *) item_entity);
         }
-        pedestal_te->item = {0, 0, 0};
+        pedestal_te->data.item = {0, 0, 0};
     }
     return 1;
 }
@@ -68,15 +68,13 @@ static bool Pedestal_isCubeShaped(UNUSED EntityTile *self) {
 
 void make_pedestal() {
     // Construct
-    pedestal = new EntityTile();
+    pedestal = EntityTile::allocate();
     ALLOC_CHECK(pedestal);
     int texture = INVALID_TEXTURE;
-    Tile_constructor((Tile *) pedestal, PEDESTAL_ID, texture, Material_glass);
-    Tile_isEntityTile[PEDESTAL_ID] = true;
-    pedestal->texture = texture;
+    pedestal->constructor(PEDESTAL_ID, texture, Material::glass);
 
     // Set VTable
-    pedestal->vtable = dup_EntityTile_vtable(EntityTile_vtable_base);
+    pedestal->vtable = dup_vtable(EntityTile_vtable_base);
     ALLOC_CHECK(pedestal->vtable);
     pedestal->vtable->newTileEntity = Pedestal_newTileEntity;
     pedestal->vtable->use = Pedestal_use;
@@ -86,13 +84,13 @@ void make_pedestal() {
     pedestal->vtable->isCubeShaped = Pedestal_isCubeShaped;
 
     // Init
-    EntityTile_init(pedestal);
-    pedestal->vtable->setDestroyTime(pedestal, 2.0f);
-    pedestal->vtable->setExplodeable(pedestal, 10.0f);
-    pedestal->vtable->setSoundType(pedestal, &Tile_SOUND_STONE);
+    pedestal->init();
+    pedestal->setDestroyTime(2.0f);
+    pedestal->setExplodeable(10.0f);
+    pedestal->setSoundType(Tile::SOUND_STONE);
     pedestal->category = 4;
     std::string name = "pedestal";
-    pedestal->vtable->setDescriptionId(pedestal, &name);
+    pedestal->setDescriptionId(name);
 }
 
 // Tile entity
@@ -112,24 +110,24 @@ static bool PedestalTileEntity_shouldSave(UNUSED TileEntity *self) {
 }
 
 static void PedestalTileEntity_load(TileEntity *self, CompoundTag *tag) {
-    TileEntity_load_non_virtual(self, tag);
+    TileEntity_load->get(false)(self, tag);
     CompoundTag *ctag = CompoundTag_getCompound_but_not(tag, "Item");
     if (ctag) {
-        ItemInstance *i = ItemInstance_fromTag(ctag);
+        ItemInstance *i = ItemInstance::fromTag(ctag);
         if (i) {
-            ((PedestalTileEntity *) self)->item = *i;
+            ((PedestalTileEntity *) self)->data.item = *i;
             delete i;
         }
     }
 }
 
 static bool PedestalTileEntity_save(TileEntity *self, CompoundTag *tag) {
-    TileEntity_save_non_virtual(self, tag);
-    CompoundTag *ctag = new CompoundTag();
-    CompoundTag_constructor(ctag, "");
-    ItemInstance_save(&((PedestalTileEntity *) self)->item, ctag);
+    TileEntity_save->get(false)(self, tag);
+    CompoundTag *ctag = CompoundTag::allocate();
+    ctag->constructor("");
+    ((PedestalTileEntity *) self)->data.item.save(ctag);
     std::string item = "Item";
-    CompoundTag_put(tag, &item, (Tag *) ctag);
+    tag->put(item, (Tag *) ctag);
     return true;
 }
 
@@ -146,48 +144,48 @@ CUSTOM_VTABLE(pedestal_te, TileEntity) {
 static PedestalTileEntity *make_pedestal_tile_entity() {
     PedestalTileEntity *pedestal_te = new PedestalTileEntity;
     ALLOC_CHECK(pedestal_te);
-    TileEntity_constructor(pedestal_te, 47);
-    pedestal_te->item = {0, 0, 0};
-    pedestal_te->renderer_id = 10;
-    pedestal_te->vtable = get_pedestal_te_vtable();
+    pedestal_te->super()->constructor(47);
+    pedestal_te->data.item = {0, 0, 0};
+    pedestal_te->super()->renderer_id = 10;
+    pedestal_te->super()->vtable = get_pedestal_te_vtable();
     return pedestal_te;
 }
 
-HOOK_FROM_CALL(0xd2544, TileEntity *, TileEntityFactory_createTileEntity, (int id)) {
+OVERWRITE_CALLS(TileEntityFactory_createTileEntity, TileEntity *, TileEntityFactory_createTileEntity_injection, (TileEntityFactory_createTileEntity_t original, int id)) {
     if (id == 47) {
-        return make_pedestal_tile_entity();
+        return (TileEntity *) make_pedestal_tile_entity();
     }
     // Call original
-    return TileEntityFactory_createTileEntity_original_FG6_API(id);
+    return original(id);
 }
 
-HOOK_FROM_CALL(0x149b0, void, TileEntity_initTileEntities, ()) {
+OVERWRITE_CALLS(TileEntity_initTileEntities, void, TileEntity_initTileEntities_injection, (TileEntity_initTileEntities_t original)) {
     // Call original
-    TileEntity_initTileEntities_original_FG6_API();
+    original();
     // Add
     std::string str = "Pedestal";
-    TileEntity_setId(47, &str);
+    TileEntity::setId(47, str);
 }
 
 // Tile again
 static TileEntity *Pedestal_newTileEntity(UNUSED EntityTile *self) {
-    return make_pedestal_tile_entity();
+    return (TileEntity *) make_pedestal_tile_entity();
 }
 
 // Renderer
 static void PedestalTileEntityRenderer_render(UNUSED TileEntityRenderer *self, TileEntity *tileentity, float x, float y, float z, UNUSED float unknown) {
     PedestalTileEntity *pedestal_te = (PedestalTileEntity *) tileentity;
     // Render the item
-    if (ItemInstance_isNull(&pedestal_te->item)) return;
+    if (pedestal_te->data.item.isNull()) return;
     glPushMatrix();
     float bob = 0.1f * sinf(5.0f * the_spinny * (M_PI / 180.0f));
     glTranslatef(x + 0.5f, y + 1.3f + bob, z + 0.5f);
     glRotatef(the_spinny, 0, 1, 0);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     std::string file = "terrain.png";
-    EntityRenderer_bindTexture(NULL, &file);
+    EntityRenderer_bindTexture->get(false)(NULL, file);
     glScalef(0.25f, 0.25f, 0.25f);
-    ItemInHandRenderer_renderItem(EntityRenderer_entityRenderDispatcher->item_renderer, NULL, &pedestal_te->item);
+    EntityRenderer::entityRenderDispatcher->item_renderer->renderItem(nullptr, &pedestal_te->data.item);
     glPopMatrix();
 }
 
@@ -196,16 +194,17 @@ CUSTOM_VTABLE(pedestal_ter, TileEntityRenderer) {
 }
 
 static TileEntityRenderer *make_pedestal_tile_entity_renderer() {
-    TileEntityRenderer *pedestal_ter = new TileEntityRenderer;
+    TileEntityRenderer *pedestal_ter = TileEntityRenderer::allocate();
     ALLOC_CHECK(pedestal_ter);
     pedestal_ter->vtable = get_pedestal_ter_vtable();
     return pedestal_ter;
 }
 
-HOOK_FROM_CALL(0x67330, void, TileEntityRenderDispatcher_constructor, (TileEntityRenderDispatcher *self)) {
+OVERWRITE_CALLS(TileEntityRenderDispatcher_constructor, TileEntityRenderDispatcher *, TileEntityRenderDispatcher_constructor_injection, (TileEntityRenderDispatcher_constructor_t original, TileEntityRenderDispatcher *self)) {
     // Call original
-    TileEntityRenderDispatcher_constructor_original_FG6_API(self);
+    original(self);
     // Add pedestal renderer
     TileEntityRenderer *pedestalTileEntityRenderer = make_pedestal_tile_entity_renderer();
     self->renderer_map.insert(std::make_pair(10, pedestalTileEntityRenderer));
+    return self;
 }

@@ -73,7 +73,7 @@ static char *parse_pos(char *message, Minecraft *mc, Pos &pos, bool &success, bo
         return message;
     }
     bool rel = false;
-    OffsetPosTranslator offset = mc->command_server->pos_translator;
+    OffsetPosTranslator &offset = mc->command_server->pos_translator;
     // X
     pos.x = parse_single(content, pos.x, success, rel);
     if (!success) return message;
@@ -149,7 +149,8 @@ static void replace_mojis(std::string &text) {
 }
 
 // The Actual Mod
-HOOK(chat_handle_packet_send, void, (Minecraft *minecraft, ChatPacket *packet)) {
+HOOK(chat_handle_packet_send, void, (const Minecraft *minecraft_, ChatPacket *packet)) {
+    Minecraft *minecraft = (Minecraft *) minecraft_;
     if (packet->message.c_str()[0] != '/' || packet->message.c_str()[1] == '/' || minecraft->level->is_client_side) {
         replace_mojis(packet->message);
         ensure_chat_handle_packet_send();
@@ -164,48 +165,47 @@ HOOK(chat_handle_packet_send, void, (Minecraft *minecraft, ChatPacket *packet)) 
         // Get gamemode
         message = next_arg(message, content);
         // Swap Game Mode
-        Minecraft_setIsCreativeMode_t Minecraft_setIsCreativeMode_injection = (Minecraft_setIsCreativeMode_t) extract_from_bl_instruction((uchar *) 0x16fdc);
         if (content == "") {
-            Minecraft_setIsCreativeMode_injection(minecraft, !minecraft->is_creative_mode);
+            minecraft->setIsCreativeMode(!minecraft->is_creative_mode);
         } else if (content == "s" || content == "0" || content == "survival") {
-            Minecraft_setIsCreativeMode_injection(minecraft, 0);
+            minecraft->setIsCreativeMode(0);
             minecraft->player->inventory->is_creative = 0;
         } else if (content == "c" || content == "1" || content == "creative" || content == "creator") {
-            Minecraft_setIsCreativeMode_injection(minecraft, 1);
+            minecraft->setIsCreativeMode(1);
             minecraft->player->inventory->is_creative = 1;
         } else {
-            misc_add_message(&minecraft->gui, ("Unknown gamemode: '" + content + "', try /? gamemode for help").c_str());
+            minecraft->gui.addMessage("Unknown gamemode: '" + content + "', try /? gamemode for help");
             return;
         }
         // Reset inventory
         message = next_arg(message, content);
         if (content == "inv") {
-            Inventory_clearInventoryWithDefault(minecraft->player->inventory);
+            minecraft->player->inventory->clearInventoryWithDefault();
         }
     } else if (content == "clear") {
-        Inventory_clearInventory(minecraft->player->inventory);
+        minecraft->player->inventory->clearInventory();
     } else if (content == "inv") {
-        Inventory_clearInventoryWithDefault(minecraft->player->inventory);
+        minecraft->player->inventory->clearInventoryWithDefault();
     } else if (content == "kill_items") {
         int removed = 0;
         for (Entity *e : minecraft->level->entities) {
-            if (e->vtable->isItemEntity(e) != 0) {
-                e->vtable->remove(e);
+            if (e->isItemEntity() != 0) {
+                e->remove();
                 removed += 1;
             }
         }
         std::string s = "Removed " + std::to_string(removed) + " items";
-        misc_add_message(&minecraft->gui, s.c_str());
+        minecraft->gui.addMessage(s);
     } else if (content == "kill_all") {
         int removed = 0;
         for (Entity *e : minecraft->level->entities) {
-            if (e->vtable->getEntityTypeId(e) != 0) {
-                e->vtable->remove(e);
+            if (e->getEntityTypeId() != 0) {
+                e->remove();
                 removed += 1;
             }
         }
         std::string s = "Removed " + std::to_string(removed) + " entities";
-        misc_add_message(&minecraft->gui, s.c_str());
+        minecraft->gui.addMessage(s);
     } else if (content == "summon") {
         // Get id
         message = next_arg(message, content);
@@ -216,7 +216,7 @@ HOOK(chat_handle_packet_send, void, (Minecraft *minecraft, ChatPacket *packet)) 
         } else if (MOB_IDS.find(content) != MOB_IDS.end()) {
             mob_id = MOB_IDS[content];
         } else {
-            misc_add_message(&minecraft->gui, ("Unknown mob: '" + content + "', try /? summon for help").c_str());
+            minecraft->gui.addMessage("Unknown mob: '" + content + "', try /? summon for help");
             return;
         }
         // Get pos
@@ -224,21 +224,21 @@ HOOK(chat_handle_packet_send, void, (Minecraft *minecraft, ChatPacket *packet)) 
         bool success = true;
         message = parse_pos(message, minecraft, pos, success, true);
         if (!success) {
-            misc_add_message(&minecraft->gui, "Failed to parse position");
+            minecraft->gui.addMessage("Failed to parse position");
             return;
         }
         // Summon
         Entity *entity = NULL;
         if (mob_id < 0x40) {
-            entity = (Entity *) MobFactory_CreateMob(mob_id, minecraft->level);
+            entity = (Entity *) MobFactory::CreateMob(mob_id, minecraft->level);
         } else {
-            entity = EntityFactory_CreateEntity(mob_id, minecraft->level);
+            entity = EntityFactory::CreateEntity(mob_id, minecraft->level);
         }
         if (entity == NULL) {
-            misc_add_message(&minecraft->gui, "Failed to spawn entity");
+            minecraft->gui.addMessage("Failed to spawn entity");
             return;
         }
-        Entity_moveTo_non_virtual(entity, pos.x, pos.y, pos.z, 0, 0);
-        Level_addEntity(minecraft->level, entity);
+        entity->moveTo(pos.x, pos.y, pos.z, 0, 0);
+        minecraft->level->addEntity(entity);
     }
 }

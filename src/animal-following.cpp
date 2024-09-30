@@ -36,14 +36,14 @@ static Entity *Animal_findAttackTarget_injection(Animal *self) {
     aabb.y2 += get_sign(self->hitbox.y2) * 3;
     aabb.z2 += get_sign(self->hitbox.z2) * 3;
     std::vector<Entity *> buff = {};
-    if (!Level_getEntitiesOfType(self->level, 0, &aabb, &buff)) return NULL;
+    if (!self->level->getEntitiesOfType(0, aabb, buff)) return NULL;
     for (Entity *e : buff) {
-        if (!e->vtable->isPlayer(e)) continue;
+        if (!e->isPlayer()) continue;
         Inventory *inventory = ((Player *) e)->inventory;
-        ItemInstance *held_ii = Inventory_getSelected(inventory);
+        ItemInstance *held_ii = inventory->getSelected();
         if (!held_ii) continue;
-        Item *held = Item_items[held_ii->id];
-        if (is_food(self->vtable->getEntityTypeId(self), held)) {
+        Item *held = Item::items[held_ii->id];
+        if (is_food(self->getEntityTypeId(), held)) {
             // They are holding food :)
             return e;
         }
@@ -54,17 +54,17 @@ static Entity *Animal_findAttackTarget_injection(Animal *self) {
 void Animal_updateAi_injection(Animal *self) {
     // Check if the player is still holding the food and close enough
     if (self->target_id != 0) {
-        Entity *e = Level_getEntity(self->level, self->target_id);
-        if (!e || !e->vtable->isPlayer(e)) {
+        Entity *e = self->level->getEntity(self->target_id);
+        if (!e || !e->isPlayer()) {
             self->target_id = 0;
         } else {
             Inventory *inventory = ((Player *) e)->inventory;
-            ItemInstance *held_ii = Inventory_getSelected(inventory);
+            ItemInstance *held_ii = inventory->getSelected();
             if (!held_ii) {
                 self->target_id = 0;
             } else {
-                Item *held = Item_items[held_ii->id];
-                self->target_id *= is_food(self->vtable->getEntityTypeId(self), held);
+                Item *held = Item::items[held_ii->id];
+                self->target_id *= is_food(self->getEntityTypeId(), held);
             }
             // Check dist
             int dist = abs(self->x - e->x) + abs(self->z - e->z);
@@ -78,13 +78,13 @@ void Animal_updateAi_injection(Animal *self) {
         self->target_id = 0;
     }
     // Continue
-    PathfinderMob_updateAi_non_virtual((PathfinderMob *) self);
+    PathfinderMob_updateAi->get(false)((PathfinderMob *) self);
 }
 
 __attribute__((constructor)) static void init() {
-    overwrite((void *) Animal_findAttackTarget_non_virtual, (void *) Animal_findAttackTarget_injection);
+    patch_vtable(Animal_findAttackTarget, Animal_findAttackTarget_injection);
     // Fix PathfinderMob::updateAi latching on
-    for (void *i : {(void *) Chicken_updateAi_vtable_addr, (void *) Cow_updateAi_vtable_addr, (void *) Pig_updateAi_vtable_addr, (void *) Sheep_updateAi_vtable_addr}) {
+    for (void *i : {(void *) Chicken_updateAi->get_vtable_addr(), (void *) Cow_updateAi->get_vtable_addr(), (void *) Pig_updateAi->get_vtable_addr(), (void *) Sheep_updateAi->get_vtable_addr()}) {
         patch_address(i, (void *) Animal_updateAi_injection);
     }
 }

@@ -81,9 +81,9 @@ int transform_id(int *id, int data, bool *should_heal) {
 
 static void show_particles_and_pop(Level *level, Entity *src, int x, int y, int z, bool small) {
     // Play the sounds
-    float f = Random_genrand_int32(&Mth__random);
+    float f = Mth::_random.genrand_int32();
     std::string name = "random.pop";
-    Level_playSound(level, src, &name, 0.5, 0.4 / (f * 0.4 + 0.8));
+    level->playSound(src, name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
     // Show the particles
     std::string part = "flame";
@@ -92,26 +92,26 @@ static void show_particles_and_pop(Level *level, Entity *src, int x, int y, int 
     for (float ym : {speed, -speed}) {
         // Sides
         for (int i = 0; i < 16; i++) {
-            Level_addParticle(level, &part, x + 0.5, y, z + 0.5, (sin(i * (360/8))) * speed, (i > 8) * ym, (cos(i * (360/8))) * speed, 0);
+            level->addParticle(part, x + 0.5, y, z + 0.5, (sin(i * (360/8))) * speed, (i > 8) * ym, (cos(i * (360/8))) * speed, 0);
         }
         // Top/bottom
-        Level_addParticle(level, &part, x + 0.5, y, z + 0.5, 0, ym, 0, 0);
+        level->addParticle(part, x + 0.5, y, z + 0.5, 0, ym, 0, 0);
     }
 }
 
 bool transmutate_pedestal(Level *level, Player *player, int x, int y, int z, ItemInstance *item) {
     // Get
-    if (level->vtable->getTile(level, x, y, z) != PEDESTAL_ID) return false;
-    PedestalTileEntity *pedestal_te = (PedestalTileEntity *) Level_getTileEntity(level, x, y, z);
+    if (level->getTile(x, y, z) != PEDESTAL_ID) return false;
+    PedestalTileEntity *pedestal_te = (PedestalTileEntity *) level->getTileEntity(x, y, z);
     if (!pedestal_te) return false;
     // Transmutate
     bool should_heal = false;
-    int id = pedestal_te->item.id;
-    int aux = transform_id(&id, pedestal_te->item.auxiliary, &should_heal);
+    int id = pedestal_te->data.item.id;
+    int aux = transform_id(&id, pedestal_te->data.item.auxiliary, &should_heal);
     // Set
-    if (aux != -1 && (id != pedestal_te->item.id || pedestal_te->item.auxiliary != aux)) {
-        pedestal_te->item.id = id;
-        pedestal_te->item.auxiliary = aux;
+    if (aux != -1 && (id != pedestal_te->data.item.id || pedestal_te->data.item.auxiliary != aux)) {
+        pedestal_te->data.item.id = id;
+        pedestal_te->data.item.auxiliary = aux;
         show_particles_and_pop(level, (Entity *) player, x, (float) y + 1.3f, z, true);
         // Heal
         if (should_heal && item) item->auxiliary = 0;
@@ -127,27 +127,27 @@ static int NetherWandItem_useOn(UNUSED Item *self, ItemInstance *item, Player *p
     }
 
     // Let the transmutation begin
-    int id = level->vtable->getTile(level, x, y, z);
+    int id = level->getTile(x, y, z);
     if (id == PEDESTAL_ID) {
         // Transmutate the pedestal
         return transmutate_pedestal(level, player, x, y, z, item);
     }
     // Transmutate the block
-    int old_id = id, old_data = level->vtable->getData(level, x, y, z);
+    int old_id = id, old_data = level->getData(x, y, z);
     int data = transform_id(&id, old_data, NULL);
     if (data == -1 || (old_id == id && old_data == data)) return 1;
     if (id < 256) {
         // Block
-        Level_setTileAndData(level, x, y, z, id, data);
+        level->setTileAndData(x, y, z, id, data);
     } else {
         // Item
         ItemInstance i = {.count = 1, .id = id, .auxiliary = data};
-        ItemEntity *item_entity = (ItemEntity *) EntityFactory_CreateEntity(64, level);
+        ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
         ALLOC_CHECK(item_entity);
-        ItemEntity_constructor(item_entity, level, x + 0.5f, y, z + 0.5f, &i);
-        Entity_moveTo_non_virtual((Entity *) item_entity, x + 0.5f, y, z + 0.5f, 0, 0);
-        Level_addEntity(level, (Entity *) item_entity);
-        Level_setTileAndData(level, x, y, z, 0, 0);
+        item_entity->constructor(level, x + 0.5f, y, z + 0.5f, i);
+        item_entity->moveTo(x + 0.5f, y, z + 0.5f, 0, 0);
+        level->addEntity((Entity *) item_entity);
+        level->setTileAndData(x, y, z, 0, 0);
     }
     show_particles_and_pop(level, (Entity *) player, x, y, z, false);
 
@@ -155,32 +155,32 @@ static int NetherWandItem_useOn(UNUSED Item *self, ItemInstance *item, Player *p
 }
 
 static void NetherWandItem_interactEnemy(UNUSED Item *self, UNUSED ItemInstance *item, Mob *mob) {
-    if (mob->vtable->getEntityTypeId(mob) == 12) {
+    if (mob->getEntityTypeId() == 12) {
         // Zombify!
-        Mob *zombpig = MobFactory_CreateMob(36, mob->level);
+        Mob *zombpig = MobFactory::CreateMob(36, mob->level);
         ALLOC_CHECK(zombpig);
-        Entity_moveTo_non_virtual((Entity *) zombpig, mob->x, mob->y, mob->z, mob->yaw, mob->pitch);
-        Level_addEntity(mob->level, (Entity *) zombpig);
-        mob->vtable->remove(mob);
+        zombpig->moveTo(mob->x, mob->y, mob->z, mob->yaw, mob->pitch);
+        mob->level->addEntity((Entity *) zombpig);
+        mob->remove();
         // Pop
         show_particles_and_pop(zombpig->level, (Entity *) zombpig, zombpig->x, zombpig->y, zombpig->z, false);
     }
 }
 
-OVERWRITE_CALLS(GameMode_attack_non_virtual, void, GameMode_attack_injection, (GameMode *self, Player *player, Entity *target)) {
-    ItemInstance *held = Inventory_getSelected(player->inventory);
+OVERWRITE_CALLS(GameMode_attack, void, GameMode_attack_injection, (GameMode_attack_t original, GameMode *self, Player *player, Entity *target)) {
+    ItemInstance *held = player->inventory->getSelected();
     if (held && held->id == NETHER_WAND_ID) {
         held->auxiliary -= 1;
         target->fire_timer = std::max(target->fire_timer, 100);
     }
-    return GameMode_attack_non_virtual(self, player, target);
+    return original(self, player, target);
 }
 
 static Item_vtable *get_nether_wand_item_vtable() {
     static Item_vtable *vtable = NULL;
     if (vtable == NULL) {
         // Init
-        vtable = dup_Item_vtable(Item_vtable_base);
+        vtable = dup_vtable(Item_vtable_base);
         ALLOC_CHECK(vtable);
 
         // Modify
@@ -195,16 +195,16 @@ static Item_vtable *get_nether_wand_item_vtable() {
 static Item *nether_wand = NULL;
 void make_nether_wand() {
     // Construct
-    nether_wand = new Item();
+    nether_wand = Item::allocate();
     ALLOC_CHECK(nether_wand);
-    Item_constructor(nether_wand, NETHER_WAND_ID - 256);
+    nether_wand->constructor(NETHER_WAND_ID - 256);
 
     // Set VTable
     nether_wand->vtable = get_nether_wand_item_vtable();
 
     // Setup
     std::string name = "nether_wand";
-    nether_wand->vtable->setDescriptionId(nether_wand, &name);
+    nether_wand->setDescriptionId(name);
     nether_wand->max_damage = 60;
     nether_wand->is_stacked_by_data = true;
     nether_wand->max_stack_size = 1;
