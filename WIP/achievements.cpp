@@ -177,8 +177,7 @@ Screen *create_achievement_screen() {
 #define SCROLL_SENSITIVITY 0.1f
 bool achievement_wants_open = false;
 HOOK(SDL_PollEvent, int, (SDL_Event *event)) {
-    ensure_SDL_PollEvent();
-    int ret = (*real_SDL_PollEvent)(event);
+    int ret = real_SDL_PollEvent()(event);
     if (ret == 1 && event != NULL) {
         if (event->type == SDL_USEREVENT && event->user.data1 == SDL_PRESSED && event->user.code == USER_EVENT_REAL_KEY) {
             // Opening achivements screen

@@ -15,3 +15,11 @@ build/%.o: ./src/%.cpp
 
 clean:
 	rm -f $(OBJ) libredstone.so
+
+
+FORCE: ;
+cmake: FORCE
+	mkdir -p cmake
+	cd cmake; \
+	 cmake ..; \
+	 make

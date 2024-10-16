@@ -153,8 +153,7 @@ HOOK(chat_handle_packet_send, void, (const Minecraft *minecraft_, ChatPacket *pa
     Minecraft *minecraft = (Minecraft *) minecraft_;
     if (packet->message.c_str()[0] != '/' || packet->message.c_str()[1] == '/' || minecraft->level->is_client_side) {
         replace_mojis(packet->message);
-        ensure_chat_handle_packet_send();
-        real_chat_handle_packet_send(minecraft, packet);
+        real_chat_handle_packet_send()(minecraft, packet);
     }
     // It's a command
     char *message = (char *) packet->message.c_str() + 1;

@@ -287,8 +287,7 @@ static void Language_injection() {
 }
 
 HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
-    ensure_title_screen_load_splashes();
-    real_title_screen_load_splashes(splashes);
+    real_title_screen_load_splashes()(splashes);
     // Add some cool splashes
     splashes.push_back("Type :music2: in chat!");
     splashes.push_back("The very model of a modern major general");
