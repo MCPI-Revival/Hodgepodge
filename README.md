@@ -17,7 +17,7 @@ Currently this mod works with both Reborn 2.5.3 and 3.0.0. **MCPI++ doesn't work
 
 Run `make`, after running latest (and I mean latest, not latest release, absolute [latest build](https://gitea.thebrokenrail.com/minecraft-pi-reborn/minecraft-pi-reborn/actions)), you don't actually have to run it using `--copy-sdk` works fine as well. Using the Flatpak's symbols isn't supported because it is too slow to update, but if you insist just change all `~` to `~/.var/app/com.thebrokenrail.MCPIReborn/` in the makefile.
 
-If for some weird reason you like CMake, the cmake file for it was provided by the wonderful @TheBrokenRail, it can be used by running `make cmake` and the build will be in `cmake/libredstone.so`.
+If for some weird reason you like CMake, the CMakeLists.txt for it was provided by the wonderful [@TheBrokenRail](https://github.com/TheBrokenRail), it can be used by running `make cmake` and the build will be in `cmake/libredstone.so`.
 
 ## Contributing
 
