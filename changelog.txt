@@ -3,11 +3,11 @@
 - Fix repeater placement
 - Fix repeater rendering
 - Fix pistons updating before pushing
-- Allow render components to be placed on glass and slabs
+- Allow redstone components to be placed on glass and slabs
 - Fix repeater drops
 - Add redstone lamp
 - Make liquids replacable by pistons
-- Update to the weird new 3.0.0 api of [cf6989b](https://github.com/MCPI-Revival/minecraft-pi-reborn/commit/cf6989bed262580e2f90edf938430be1f6f728ff) "I need to sleep, here be dragons", which could have used more sleep and less dragons
+- Updated to Reborn 3.0.0-73b3cd1 thanks to TBR
 
 0.1.1:
 - Fix 1-tick pistons

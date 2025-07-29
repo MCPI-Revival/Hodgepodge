@@ -1,5 +1,5 @@
 // Some random tiny changes
-#include <libreborn/libreborn.h>
+//#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
 
@@ -14,7 +14,6 @@ static bool PrimedTnt_interact_injection(PrimedTnt *self, Player *player) {
         // Spawn item
         ItemInstance i = {.count = 1, .id = 46, .auxiliary = 1};
         ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, self->level);
-        ALLOC_CHECK(item_entity);
         item_entity->constructor(self->level, self->x + 0.5f, self->y, self->z + 0.5f, i);
         self->level->addEntity((Entity *) item_entity);
         // Remove tnt
@@ -63,9 +62,10 @@ OVERWRITE_CALLS(DoorTile_use, bool, DoorTile_use_injection, (DoorTile_use_t orig
 }
 
 // Swing through hitboxless block
-static Item_vtable *WeaponItem_vtable = (Item_vtable *) 0x10ef30;
 static bool clip_through_hitboxless = true;
-OVERWRITE_CALLS(Level_clip, HitResult, Level_clip_injection, (Level_clip_t original, Level *level, const Vec3 &param_1, const Vec3 &param_2, bool clip_liquids, bool param_3)) {
+OVERWRITE_CALLS(
+    Level_clip, HitResult, Level_clip_injection, (Level_clip_t original, Level *level, const Vec3 &param_1, const Vec3 &param_2, bool clip_liquids, bool param_3)
+) {
     return original(level, param_1, param_2, clip_liquids, clip_through_hitboxless || param_3);
 }
 static void on_tick(Minecraft *mc) {
@@ -86,12 +86,12 @@ OVERWRITE_CALLS(Mob_hurt, bool, Mob_hurt_injection, (Mob_hurt_t original, Mob *s
     if (iitem == NULL) return ret;
     // Check item
     Item *item = Item::items[iitem->id];
-    if (item->vtable != (Item_vtable *) 0x10f960) return ret;
+    if (item->vtable != ShovelItem_vtable) return ret;
     // WACK
     float speed = ((DiggerItem *) item)->speed;
-    self->vel_x += attacker->vel_x * speed;
-    self->vel_y += attacker->vel_y * (speed / 7);
-    self->vel_z += attacker->vel_z * speed;
+    self->velocity_x += attacker->velocity_x * speed;
+    self->velocity_y += attacker->velocity_y * (speed / 7);
+    self->velocity_z += attacker->velocity_z * speed;
     return ret;
 }
 
@@ -103,7 +103,7 @@ __attribute__((constructor)) static void init() {
     patch_vtable(PrimedTnt_interact, PrimedTnt_interact_injection);
 
     // No sign limit
-    overwrite_call((void *) 0xd1e2c, (void *) nop);
+    overwrite_call_manual((void *) 0xd1e2c, (void *) nop);
 
 #if 0
     // Infinite worlds, too buggy for now, but I'm going to do it for real one day

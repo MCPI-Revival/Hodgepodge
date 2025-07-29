@@ -1,4 +1,4 @@
-#include <libreborn/libreborn.h>
+//#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 
 #include "api.h"
@@ -6,28 +6,21 @@
 
 static Tile *oddlybrightblock = NULL;
 
-static int OddlyBrightBlock_getRenderShape(UNUSED Tile *tile) {
-    return 48;
-}
+struct OddlyBrightBlock final : CustomTile {
+    OddlyBrightBlock(const int id, const int texture, const Material *material): CustomTile(id, texture, material) {}
 
-static int OddlyBrightBlock_getTexture2(UNUSED Tile *tile, int face, int data) {
-    static int (*ClothTile_getTexture2)(Tile *, int, int) = (int (*)(Tile *, int, int)) 0xca22c;
-    return ClothTile_getTexture2(tile, face, data);
-}
+    int getRenderShape() override {
+        return 48;
+    }
+
+    int getTexture2(int face, int data) override {
+        return ClothTile_getTexture2(self, face, data);
+    }
+};
 
 void make_oddly_bright_blocks() {
     // Construct
-    oddlybrightblock = Tile::allocate();
-    ALLOC_CHECK(oddlybrightblock);
-    int texture = 4 * 16; //OBB_ITEM_TEXTURE;
-    oddlybrightblock->constructor(OBB_ID, texture, Material::metal);
-    oddlybrightblock->texture = texture;
-
-    // Set VTable
-    oddlybrightblock->vtable = dup_vtable(Tile_vtable_base);
-    ALLOC_CHECK(oddlybrightblock->vtable);
-    oddlybrightblock->vtable->getRenderShape = OddlyBrightBlock_getRenderShape;
-    oddlybrightblock->vtable->getTexture2 = OddlyBrightBlock_getTexture2;
+    oddlybrightblock = (new OddlyBrightBlock(OBB_ID, 4 * 16 /*OBB_ITEM_TEXTURE*/, Material::metal))->self;
 
     // Init
     oddlybrightblock->init();

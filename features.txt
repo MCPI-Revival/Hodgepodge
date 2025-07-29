@@ -1,21 +1,4 @@
-- FIX: Language changes
-  - Now cameras, melon seeds, pumpkin stems, and double stone slabs have names!
-  - Invisible bedrock now has a name and description id
-  - The unmoving water and lava now have a "Still " prefix
-  - Carried grass and carried leaves now have a "Carried " prefix
-- FIX: Zombie pigmen don't burn in daylight
-  - In classic Mojank fashion, they were already fireproof, except for the sun
-- FIX: grass_carried's bottom texture is no longer the same as the top
-- FIX: The crosshair does not render in 3rd person mode
-- FIX: MCPI-Addons (v1.2.4 to v1.2.5) used CreatorLevel instead of ServerLevel, which stops the level from ticking
-- FIX: Camera legs now render properly
-- FIX/QOL: Backwards compat
-  - While the exact symbols are still required to build it, the builds can run on older versions of reborn
-  - A custom symbol-processor is used on the provided builds
-  - A libreborn shim is used for vtable patching
-  - `alloc_*` functions are avoided
-  - `*_non_virtual` are hard-coded (see src/api.h for details)
-  - 'dup_*_vtable' are shimed (see src/api.h for details)
+- FIX/QOL: Quartz can be crafted from quartz blocks
 - QOL: You can get rid of camera with shift-left click
 - QOL: You can adjust cameras by left clicking, and exiting by shifting
   - TODO: Fix "astral projection" bug
@@ -50,7 +33,6 @@
 - ADDED: Conveyor Belts
   - They move entitys in the direction they are facing
   - Snazy animated texture!
-    - I hate graphics code and will never write it again
   - Items on it do not despawn and cannot be picked up
   - Attached items can be picked up by clicking the belt
 - ADDED: Redstone Dust
@@ -61,15 +43,16 @@
 - ADDED: Active Redstone Block
   - Same as a Redstone Block, but it hard powers nearby blocks
 - ADDED: Piston and sticky piston
-  - Work mostly as expected
+  - Sometimes work
+  - Lots of bugs still, please report any you find!!
   - Lots of fun stuff can be tweaked in `src/piston.h`
-  - I hate graphics code and will never write it again
   - TODO: Fix extended base shape
 - ADDED: Nether Wand
   - Crafted from iron and the nether core
   - Can be used to transform blocks and items into other blocks and items
     - Cobble into netherack
     - Sand into gravel
+    - Glass into quartz
     - Bricks into nether bricks
     - Flowers and saplings into dead bushes
     - Mushrooms into the other mushrooms
@@ -81,7 +64,7 @@
     - Diamonds into ender pearls
     - Redstone dust into a thrust crystal
   - Can also be used to turn pigs into pigmen
-  - THIS IS TEMPORARY, once these items have a "real" recipe, you won't be able to make them with the wand.
+  - THIS IS TEMPORARY, once these items have a "real" recipe, you won't be able to make them with the wand (the wand item will stick around, but be unused)
 - ADDED: Ender pearls
   - They can be thrown and teleport you
   - No cooldown because that's boring, it does hurt you a little
@@ -106,3 +89,20 @@
   - Spinny!
   - You can put items on and off of them
   - Spinning is synced across all pedestals
+
+### Fixes no longer provided by this mod (merged with Reborn)
+
+- Language changes (`Add Missing Language Strings`)
+  - Now cameras, melon seeds, pumpkin stems, and double stone slabs have names!
+  - Invisible bedrock now has a name and description id
+  - The unmoving water and lava now have a "Still " prefix
+  - Carried grass and carried leaves now have a "Carried " prefix
+- Zombie pigmen don't burn in daylight (`Fix Pigmen Burning In The Sun`)
+  - In classic Mojank fashion, they were already fireproof, except for the sun
+- grass_carried's bottom texture is no longer the same as the top (`Fix Carried Grass's Bottom Texture`)
+- Camera legs now render properly (`Render Camera Legs`)
+- The crosshair does not render in 3rd person mode (`Hide Crosshair In Third-Person`)
+
+### Fixes no longer provided due to not being needed
+
+- MCPI-Addons (v1.2.4 to v1.2.5) used CreatorLevel instead of ServerLevel, which stops the level from ticking

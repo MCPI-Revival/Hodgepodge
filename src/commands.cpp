@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include <libreborn/libreborn.h>
+#include <libreborn/util/util.h>
 #include <symbols/minecraft.h>
 #include <mods/chat/chat.h>
 #include <mods/misc/misc.h>
@@ -29,9 +29,6 @@ static char *next_arg(char *message, std::string &buf) {
     return message;
 }
 
-struct Pos {
-    float x, y, z;
-};
 static float parse_single(std::string &msg, float normal, bool &success, bool &rel) {
     rel = false;
     success = 1;
@@ -63,7 +60,7 @@ static float parse_single(std::string &msg, float normal, bool &success, bool &r
         }
     }
 }
-static char *parse_pos(char *message, Minecraft *mc, Pos &pos, bool &success, bool allow_empty = false) {
+static char *parse_pos(char *message, Minecraft *mc, Vec3 &pos, bool &success, bool allow_empty = false) {
     std::string content;
     message = next_arg(message, content);
     // Empty
@@ -219,7 +216,7 @@ HOOK(chat_handle_packet_send, void, (const Minecraft *minecraft_, ChatPacket *pa
             return;
         }
         // Get pos
-        Pos pos{minecraft->player->x, minecraft->player->y, minecraft->player->z};
+        Vec3 pos{minecraft->player->x, minecraft->player->y, minecraft->player->z};
         bool success = true;
         message = parse_pos(message, minecraft, pos, success, true);
         if (!success) {

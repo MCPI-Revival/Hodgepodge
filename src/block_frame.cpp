@@ -2,7 +2,7 @@
 
 #include <GLES/gl.h>
 
-#include <libreborn/libreborn.h>
+//#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
 
@@ -10,127 +10,51 @@
 #include "init.h"
 #include "block_frame.h"
 
-// Tile
-static EntityTile *frame = NULL;
-static TileEntity *BlockFrame_newTileEntity(UNUSED EntityTile *self);
-static int BlockFrame_use(UNUSED EntityTile *self, Level *level, int x, int y, int z, Player *player) {
-    FrameTileEntity *frame_te = (FrameTileEntity *) level->getTileEntity(x, y, z);
-    ItemInstance *held = player->inventory->getSelected();
-    if (!held->isNull() && held->id < 256) {
-        frame_te->data.tile = {.count = 1, .id = held->id, .auxiliary = held->auxiliary};
-    }
-    return 1;
-}
-
-static int BlockFrame_getRenderShape(UNUSED EntityTile *self) {
-    return /*51 +*/ 0;
-}
-
-static bool BlockFrame_isSolidRender(UNUSED EntityTile *self) {
-    // Stop it from turning other blocks invisable
-    return 0;
-}
-
-static int BlockFrame_getRenderLayer(UNUSED EntityTile *self) {
-    // Stop weird transparency issues
-    return 1;
-}
-
-static int BlockFrame_getTexture2(UNUSED EntityTile *self, UNUSED int face, UNUSED int data) {
-    return FRAME_TEXTURE;
-}
-
-static int BlockFrame_getTexture3(EntityTile *self, LevelSource *_level, int x, int y, int z, int face) {
-    if (!_level) return BlockFrame_getTexture2(self, face, 0);
-    Level *level = (Level *) _level;
-    FrameTileEntity *frame_te = (FrameTileEntity *) mc->level->getTileEntity(x, y, z);
-    if (frame_te->data.tile.isNull()) {
-        return BlockFrame_getTexture2(self, face, level->getData(x, y, z));
-    }
-    // Get the custom tile
-    Tile *t = Tile::tiles[frame_te->data.tile.id];
-    return t->getTexture2(face, frame_te->data.tile.auxiliary);
-}
-
-static bool BlockFrame_isCubeShaped(UNUSED EntityTile *self) {
-    return false;
-}
-
-void make_frame() {
-    // Construct
-    frame = EntityTile::allocate();
-    ALLOC_CHECK(frame);
-    int texture = FRAME_TEXTURE;
-    frame->constructor(FRAME_TILE_ID, texture, Material::stone);
-
-    // Set VTable
-    frame->vtable = dup_vtable(EntityTile_vtable_base);
-    ALLOC_CHECK(frame->vtable);
-    frame->vtable->newTileEntity = BlockFrame_newTileEntity;
-    frame->vtable->use = BlockFrame_use;
-    frame->vtable->getRenderShape = BlockFrame_getRenderShape;
-    frame->vtable->isSolidRender = BlockFrame_isSolidRender;
-    frame->vtable->getRenderLayer = BlockFrame_getRenderLayer;
-    frame->vtable->getTexture2 = BlockFrame_getTexture2;
-    frame->vtable->getTexture3 = BlockFrame_getTexture3;
-    frame->vtable->isCubeShaped = BlockFrame_isCubeShaped;
-
-    // Init
-    frame->setShape(0, 0, 0, 1, 0.5f, 1);
-    frame->init();
-    frame->setDestroyTime(2.0f);
-    frame->setExplodeable(5.0f);
-    frame->setSoundType(Tile::SOUND_WOOD);
-    frame->category = 1;
-    frame->setDescriptionId("frame");
-}
-
 // Tile entity
-static bool FrameTileEntity_shouldSave(UNUSED TileEntity *self) {
-    return true;
-}
+struct FrameTileEntity final : CustomTileEntity {
+    ItemInstance tile;
 
-static void FrameTileEntity_load(TileEntity *self, CompoundTag *tag) {
-    TileEntity_load->get(false)(self, tag);
-    CompoundTag *ctag = CompoundTag_getCompound_but_not(tag, "Tile");
-    if (ctag) {
-        ItemInstance *i = ItemInstance::fromTag(ctag);
-        if (i) {
-            ((FrameTileEntity *) self)->data.tile = *i;
-            delete i;
+    FrameTileEntity(int id) : CustomTileEntity(id) {}
+
+    bool shouldSave() override {
+        return true;
+    }
+
+    void load(CompoundTag *tag) override {
+        TileEntity_load->get(false)(self, tag);
+        CompoundTag *ctag = CompoundTag_getCompound_but_not(tag, "Tile");
+        if (ctag) {
+            ItemInstance *i = ItemInstance::fromTag(ctag);
+            if (i) {
+                this->tile = *i;
+                delete i;
+            }
         }
     }
-}
 
-static bool FrameTileEntity_save(TileEntity *self, CompoundTag *tag) {
-    TileEntity_save->get(false)(self, tag);
-    CompoundTag *ctag = CompoundTag::allocate();
-    ctag->constructor("");
-    ((FrameTileEntity *) self)->data.tile.save(ctag);
-    std::string tile = "Tile";
-    tag->put(tile, (Tag *) ctag);
-    return true;
-}
-
-CUSTOM_VTABLE(frame_te, TileEntity) {
-    vtable->shouldSave = FrameTileEntity_shouldSave;
-    vtable->load = FrameTileEntity_load;
-    vtable->save = FrameTileEntity_save;
-}
+    bool save(CompoundTag *tag) override {
+        TileEntity_save->get(false)(self, tag);
+        CompoundTag *ctag = CompoundTag::allocate();
+        ctag->constructor("");
+        tile.save(ctag);
+        std::string tile = "Tile";
+        tag->put(tile, (Tag *) ctag);
+        return true;
+    }
+};
 
 static FrameTileEntity *make_frame_tile_entity() {
-    FrameTileEntity *frame_te = new FrameTileEntity;
-    ALLOC_CHECK(frame_te);
-    frame_te->super()->constructor(48);
-    frame_te->data.tile = {0, FRAME_TILE_ID, 0};
-    frame_te->super()->renderer_id = 11;
-    frame_te->super()->vtable = get_frame_te_vtable();
+    FrameTileEntity *frame_te = new FrameTileEntity(48);
+    frame_te->tile = {0, FRAME_TILE_ID, 0};
+    frame_te->self->renderer_id = 11;
     return frame_te;
 }
 
-OVERWRITE_CALLS(TileEntityFactory_createTileEntity, TileEntity *, TileEntityFactory_createTileEntity_injection, (TileEntityFactory_createTileEntity_t original, int id)) {
+OVERWRITE_CALLS(
+    TileEntityFactory_createTileEntity, TileEntity *, TileEntityFactory_createTileEntity_injection, (TileEntityFactory_createTileEntity_t original, int id)
+) {
     if (id == 48) {
-        return (TileEntity *) make_frame_tile_entity();
+        return (TileEntity *) make_frame_tile_entity()->self;
     }
     // Call original
     return original(id);
@@ -144,7 +68,70 @@ OVERWRITE_CALLS(TileEntity_initTileEntities, void, TileEntity_initTileEntities_i
     TileEntity::setId(48, str);
 }
 
-// Tile again
-static TileEntity *BlockFrame_newTileEntity(UNUSED EntityTile *self) {
-    return (TileEntity *) make_frame_tile_entity();
+// Tile
+static EntityTile *frame = NULL;
+void make_frame();
+struct BlockFrame final : CustomEntityTile {
+    BlockFrame(const int id, const int texture, const Material *material): CustomEntityTile(id, texture, material) {}
+
+    bool use(Level *level, int x, int y, int z, Player *player) override {
+        FrameTileEntity *frame_te = (FrameTileEntity *) custom_get<CustomTileEntity>(level->getTileEntity(x, y, z));
+        ItemInstance *held = player->inventory->getSelected();
+        if (!held->isNull() && held->id < 256) {
+            frame_te->tile = {.count = 1, .id = held->id, .auxiliary = held->auxiliary};
+        }
+        return true;
+    }
+
+    int getRenderShape() override {
+        return /*51 +*/ 0;
+    }
+
+    bool isSolidRender() override {
+        // Stop it from turning other blocks invisable
+        return 0;
+    }
+
+    int getRenderLayer() override {
+        // Stop weird transparency issues
+        return 1;
+    }
+
+    int getTexture2(UNUSED int face, UNUSED int data) override {
+        return FRAME_TEXTURE;
+    }
+
+    int getTexture3(LevelSource *levelsrc, int x, int y, int z, int face) override {
+        if (!levelsrc) return getTexture2(face, 0);
+        Level *level = (Level *) levelsrc;
+        FrameTileEntity *frame_te = (FrameTileEntity *) custom_get<CustomTileEntity>(mc->level->getTileEntity(x, y, z));
+        if (frame_te->tile.isNull()) {
+            return getTexture2(face, level->getData(x, y, z));
+        }
+        // Get the custom tile
+        Tile *t = Tile::tiles[frame_te->tile.id];
+        return t->getTexture2(face, frame_te->tile.auxiliary);
+    }
+
+    bool isCubeShaped() override {
+        return false;
+    }
+
+    TileEntity *newTileEntity() {
+       return (TileEntity *) make_frame_tile_entity();
+   }
+};
+
+void make_frame() {
+    // Construct
+    frame = (new BlockFrame(FRAME_TILE_ID, FRAME_TEXTURE, Material::stone))->self;
+
+    // Init
+    frame->setShape(0, 0, 0, 1, 0.5f, 1);
+    frame->init();
+    frame->setDestroyTime(2.0f);
+    frame->setExplodeable(5.0f);
+    frame->setSoundType(Tile::SOUND_WOOD);
+    frame->category = 1;
+    frame->setDescriptionId("frame");
 }

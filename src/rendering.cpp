@@ -1,6 +1,5 @@
 #include <GLES/gl.h>
 
-#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 
 #include "api.h"
@@ -122,14 +121,14 @@ static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UN
     int data = self->level->getData(x, y, z);
     t->colorABGR(0xFF000000 | COLORS[(~data & 0xf)]);
     // Top and bottom
-    RENDER_SQUARE_NO_YZ(x, y, z, x + 1, y, z + 1, 0, 0, 0, 0);
-    RENDER_SQUARE_NO_YZ(x, y + 1, z + 1, x + 1, y + 1, z, 0, 0, 0, 0);
+    RENDER_SQUARE_NO_YZ(x, y,     z,     x + 1, y,     z + 1, 0, 0, 0, 0);
+    RENDER_SQUARE_NO_YZ(x, y + 1, z + 1, x + 1, y + 1, z,     0, 0, 0, 0);
     // X sides
-    RENDER_SQUARE_Y(x, y, z, x + 1, y + 1, z, 0, 0, 0, 0);
-    RENDER_SQUARE_Y(x + 1, y, z + 1, x, y + 1, z + 1, 0, 0, 0, 0);
+    RENDER_SQUARE_Y(x,     y, z,     x + 1, y + 1, z,     0, 0, 0, 0);
+    RENDER_SQUARE_Y(x + 1, y, z + 1, x,     y + 1, z + 1, 0, 0, 0, 0);
     // Z sides
-    RENDER_SQUARE_Y(x, y, z + 1, x, y + 1, z, 0, 0, 0, 0);
-    RENDER_SQUARE_Y(x + 1, y, z, x + 1, y + 1, z + 1, 0, 0, 0, 0);
+    RENDER_SQUARE_Y(x,     y, z + 1, x,     y + 1, z,     0, 0, 0, 0);
+    RENDER_SQUARE_Y(x + 1, y, z,     x + 1, y + 1, z + 1, 0, 0, 0, 0);
     return true;
 }
 
@@ -171,9 +170,7 @@ static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UN
         vs[0] = vs[1] = v + uv_s; \
     }
 
-#define ADJ_UV_S() {}
-
-static bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int data, Level *level) {
+bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int data, Level *level) {
     Tesselator *t = &Tesselator::instance;
     float brightness = level ?
         (float) tile->getBrightness((LevelSource *) level, x, y, z)
@@ -196,7 +193,14 @@ static bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, 
     // Get dir
     int dir = data & 0b0111;
     // Get AABB
-    AABB aabb = AABB{x, y, z, x + 1, y + 1, z + 1};
+    AABB aabb = AABB{
+        .x1 = x,
+        .y1 = y,
+        .z1 = z,
+        .x2 = x + 1.f,
+        .y2 = y + 1.f,
+        .z2 = z + 1.f
+    };
     if (level) {
         aabb = *tile->getAABB(level, x, y, z);
     }
@@ -497,7 +501,10 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
 }
 
 // Inject
-OVERWRITE_CALLS(TileRenderer_tesselateInWorld, bool, TileRenderer_tesselateInWorld_injection, (TileRenderer_tesselateInWorld_t original, TileRenderer *self, Tile *tile, int x, int y, int z)) {
+OVERWRITE_CALLS(
+    TileRenderer_tesselateInWorld,
+    bool, TileRenderer_tesselateInWorld_injection, (TileRenderer_tesselateInWorld_t original, TileRenderer *self, Tile *tile, int x, int y, int z)
+) {
     int shape = tile->getRenderShape();
     if (shape == 47) {
         // Belts
@@ -541,7 +548,10 @@ static void TileRenderer_renderGuiTile_injection(TileRenderer_renderGuiTile_t or
         original(self, tile, aux);
     }
 }
-OVERWRITE_CALLS(TileRenderer_renderTile, void, TileRenderer_renderTile_injection, (TileRenderer_renderTile_t original, TileRenderer *self, Tile *tile, int aux)) {
+OVERWRITE_CALLS(
+    TileRenderer_renderTile,
+    void, TileRenderer_renderTile_injection, (TileRenderer_renderTile_t original, TileRenderer *self, Tile *tile, int aux)
+) {
     // This renders for anything ItemInHandRenderer::renderItem uses (which includes dropped items afaik)
     int shape = tile->getRenderShape();
     if (shape == 47) {
@@ -556,8 +566,6 @@ OVERWRITE_CALLS(TileRenderer_renderTile, void, TileRenderer_renderTile_injection
         TileRenderer_tesselatePedestalInWorld(self, tile, -0.5f, -0.5f, -0.5f, true);
     } else if (shape == 50) {
         // Piston
-        // I have no idea how this line of code got here, nor how it compiles. Commented out until I figure it out
-        //TileEntityRenderer();
         TileRenderer_tesselatePiston(tile, -0.5f, -0.5f, -0.5f, 1, NULL);
     } else {
         original(self, tile, aux);
@@ -569,42 +577,34 @@ OVERWRITE_CALLS(TileRenderer_canRender, bool, TileRenderer_canRender_injection, 
 }
 
 // Belt dynamic texture
-static void BeltTexture_tick(DynamicTexture *self) {
-    static uint belt_colors[] = {0xFF8f8f8f, 0xFF8f8f8f, 0xFF595959, 0xFF595959};
-    static constexpr int side_color = 0xFF000000;
-    static int offset = 8;
-    offset -= 1;
-    if (offset <= 0) offset = 8;
+struct BeltTexture final : CustomDynamicTexture {
+    BeltTexture(int texture) : CustomDynamicTexture(texture) {}
 
-    for (int y = 0; y < 16; y++) {
-        // Sides
-        ((uint *) self->pixels)[0 + y * 16] = side_color;
-        ((uint *) self->pixels)[15 + y * 16] = side_color;
-        // Inner part
-        for (int x = 1; x < 15; x++) {
-            ((uint *) self->pixels)[x + y * 16] = belt_colors[((y + offset) % 4)];
+    void tick() override {
+        static uint belt_colors[] = {0xFF8f8f8f, 0xFF8f8f8f, 0xFF595959, 0xFF595959};
+        static constexpr int side_color = 0xFF000000;
+        static int offset = 8;
+        offset -= 1;
+        if (offset <= 0) offset = 8;
+
+        for (int y = 0; y < 16; y++) {
+            // Sides
+            ((uint *) self->pixels)[0 + y * 16] = side_color;
+            ((uint *) self->pixels)[15 + y * 16] = side_color;
+            // Inner part
+            for (int x = 1; x < 15; x++) {
+                ((uint *) self->pixels)[x + y * 16] = belt_colors[((y + offset) % 4)];
+            }
         }
     }
-}
-
-CUSTOM_VTABLE(belt_texture, DynamicTexture) {
-    vtable->tick = BeltTexture_tick;
-}
-
-static DynamicTexture *create_belt_texture() {
-    DynamicTexture *belt_texture = DynamicTexture::allocate();
-    ALLOC_CHECK(belt_texture);
-    belt_texture->constructor(BELT_TOP_TEXTURE);
-    belt_texture->vtable = get_belt_texture_vtable();
-    return belt_texture;
-}
+};
 
 OVERWRITE_CALLS(Textures_addDynamicTexture, void, Textures_addDynamicTexture_injection, (Textures_addDynamicTexture_t original, Textures *self, DynamicTexture *tex)) {
     original(self, tex);
 
     static bool ran = false;
     if (!ran) {
-        original(self, create_belt_texture());
+        original(self, (new BeltTexture(BELT_TOP_TEXTURE))->self);
         ran = true;
     }
 }
@@ -618,7 +618,7 @@ void ItemRenderer_renderGuiItem2(Font *font, Textures *textures, ItemInstance *i
 }
 
 // Fix items
-OVERWRITE_CALL(0x63b74, void, ItemRenderer_blit_injection, (float x, float y, float texture_x, float texture_y, UNUSED float _w, UNUSED float _h)) {
+OVERWRITE_CALL_M(0x63b74, void, ItemRenderer_blit_injection, (float x, float y, float texture_x, float texture_y, UNUSED float _w, UNUSED float _h)) {
     // Center them
     //x += (16 - w) / 2;
     //y += (16 - h) / 2;
@@ -636,24 +636,17 @@ OVERWRITE_CALL(0x63b74, void, ItemRenderer_blit_injection, (float x, float y, fl
 }
 
 // Fix tiles
-OVERWRITE_CALL(0x63a90, void, glScalef_injection, (UNUSED float x, UNUSED float y, UNUSED float z)) {
-    glScalef(w / 16.f, h / 16.f, w / 16.f);
+OVERWRITE_CALL_M(0x63a90, void, glScalef_injection, (UNUSED float x, UNUSED float y, UNUSED float z)) {
+    media_glScalef(w / 16.f, h / 16.f, w / 16.f);
 }
 
-OVERWRITE_CALL(0x63a38, void, glTranslatef_injection, (float x, float y, float z)) {
+OVERWRITE_CALL_M(0x63a38, void, glTranslatef_injection, (float x, float y, float z)) {
     // TODO: Fix
-    // AAAAAAAAAAAAAAAAAAAAAAAAAHSRTGRFWEfwejfwkefbJKBFNKWEBJWFWKEBJKWEBFWHJEBFWHJBFHJWEB
-    // I HATE GRAPHIC CODE I HATE GRAPHICS CODE I HATE GRAPHICS CODE
-    glTranslatef(x / (w / 16.f), y / (h / 16.f), z);
+    // I HATE GRAPHIC CODE
+    media_glTranslatef(x / (w / 16.f), y / (h / 16.f), z);
 }
 
 __attribute__((constructor)) static void init() {
     // Tesselatation
     overwrite_calls(TileRenderer_renderGuiTile, TileRenderer_renderGuiTile_injection);
-
-    // Fix aux in hand bug
-    uchar cmp_r7_patch[] = {0x07, 0x00, 0x57, 0xe1}; // "cmp r7,r7"
-    patch((void *) 0x4b938, cmp_r7_patch);
-    uchar moveq_r3_true_patch[] = {0x01, 0x30, 0xa0, 0x03}; // "moveq r3,#0x1"
-    patch((void *) 0x4b93c, moveq_r3_true_patch);
 }

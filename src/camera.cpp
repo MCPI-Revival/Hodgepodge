@@ -1,5 +1,4 @@
 #include <symbols/minecraft.h>
-#include <libreborn/libreborn.h>
 
 #include "init.h"
 #include "api.h"

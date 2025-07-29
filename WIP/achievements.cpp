@@ -3,7 +3,7 @@
 #include <GLES/gl.h>
 #include <SDL/SDL.h>
 
-#include <libreborn/libreborn.h>
+//#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 #include <media-layer/core.h>
 

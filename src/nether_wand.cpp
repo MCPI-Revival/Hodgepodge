@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include <libreborn/libreborn.h>
+//#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
 
@@ -20,6 +20,10 @@ int transform_id(int *id, int data, bool *should_heal) {
         // Sand -> gravel
         case 12:
             *id = 13;
+            return 0;
+        // Glass -> quartz
+        case 20:
+            *id = 155;
             return 0;
         // Bricks -> nether bricks
         case 45:
@@ -102,16 +106,17 @@ static void show_particles_and_pop(Level *level, Entity *src, int x, int y, int 
 bool transmutate_pedestal(Level *level, Player *player, int x, int y, int z, ItemInstance *item) {
     // Get
     if (level->getTile(x, y, z) != PEDESTAL_ID) return false;
-    PedestalTileEntity *pedestal_te = (PedestalTileEntity *) level->getTileEntity(x, y, z);
+    PedestalTileEntity *pedestal_te = (PedestalTileEntity *) custom_get<CustomTileEntity>(level->getTileEntity(x, y, z));
     if (!pedestal_te) return false;
     // Transmutate
     bool should_heal = false;
-    int id = pedestal_te->data.item.id;
-    int aux = transform_id(&id, pedestal_te->data.item.auxiliary, &should_heal);
+    ItemInstance &pitem = get_pedestal_item(pedestal_te);
+    int id = pitem.id;
+    int aux = transform_id(&id, pitem.auxiliary, &should_heal);
     // Set
-    if (aux != -1 && (id != pedestal_te->data.item.id || pedestal_te->data.item.auxiliary != aux)) {
-        pedestal_te->data.item.id = id;
-        pedestal_te->data.item.auxiliary = aux;
+    if (aux != -1 && (id != pitem.id || pitem.auxiliary != aux)) {
+        pitem.id = id;
+        pitem.auxiliary = aux;
         show_particles_and_pop(level, (Entity *) player, x, (float) y + 1.3f, z, true);
         // Heal
         if (should_heal && item) item->auxiliary = 0;
@@ -120,52 +125,56 @@ bool transmutate_pedestal(Level *level, Player *player, int x, int y, int z, Ite
     return false;
 }
 
-static int NetherWandItem_useOn(UNUSED Item *self, ItemInstance *item, Player *player, Level *level, int x, int y, int z, UNUSED int hit_side, UNUSED float hit_x, UNUSED float hit_y, UNUSED float hit_z) {
-    // Deplete
-    if (!player->infinite_items && item) {
-        item->auxiliary -= 1;
+struct NetherWandItem final : CustomItem {
+    NetherWandItem(int id) : CustomItem(id) {}
+
+    bool useOn(
+        ItemInstance *item, Player *player, Level *level, int x, int y, int z, UNUSED int hit_side, UNUSED float hit_x, UNUSED float hit_y, UNUSED float hit_z
+    ) override {
+        // Deplete
+        if (!player->abilities.infinite_items && item) {
+            item->auxiliary -= 1;
+        }
+
+        // Let the transmutation begin
+        int id = level->getTile(x, y, z);
+        if (id == PEDESTAL_ID) {
+            // Transmutate the pedestal
+            return transmutate_pedestal(level, player, x, y, z, item);
+        }
+        // Transmutate the block
+        int old_id = id, old_data = level->getData(x, y, z);
+        int data = transform_id(&id, old_data, NULL);
+        if (data == -1 || (old_id == id && old_data == data)) return 1;
+        if (id < 256) {
+            // Block
+            level->setTileAndData(x, y, z, id, data);
+        } else {
+            // Item
+            ItemInstance i = {.count = 1, .id = id, .auxiliary = data};
+            ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
+            item_entity->constructor(level, x + 0.5f, y, z + 0.5f, i);
+            item_entity->moveTo(x + 0.5f, y, z + 0.5f, 0, 0);
+            level->addEntity((Entity *) item_entity);
+            level->setTileAndData(x, y, z, 0, 0);
+        }
+        show_particles_and_pop(level, (Entity *) player, x, y, z, false);
+
+        return 1;
     }
 
-    // Let the transmutation begin
-    int id = level->getTile(x, y, z);
-    if (id == PEDESTAL_ID) {
-        // Transmutate the pedestal
-        return transmutate_pedestal(level, player, x, y, z, item);
+    void interactEnemy(UNUSED ItemInstance *item, Mob *mob) override {
+        if (mob->getEntityTypeId() == 12) {
+            // Zombify!
+            Mob *zombpig = MobFactory::CreateMob(36, mob->level);
+            zombpig->moveTo(mob->x, mob->y, mob->z, mob->yaw, mob->pitch);
+            mob->level->addEntity((Entity *) zombpig);
+            mob->remove();
+            // Pop
+            show_particles_and_pop(zombpig->level, (Entity *) zombpig, zombpig->x, zombpig->y, zombpig->z, false);
+        }
     }
-    // Transmutate the block
-    int old_id = id, old_data = level->getData(x, y, z);
-    int data = transform_id(&id, old_data, NULL);
-    if (data == -1 || (old_id == id && old_data == data)) return 1;
-    if (id < 256) {
-        // Block
-        level->setTileAndData(x, y, z, id, data);
-    } else {
-        // Item
-        ItemInstance i = {.count = 1, .id = id, .auxiliary = data};
-        ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
-        ALLOC_CHECK(item_entity);
-        item_entity->constructor(level, x + 0.5f, y, z + 0.5f, i);
-        item_entity->moveTo(x + 0.5f, y, z + 0.5f, 0, 0);
-        level->addEntity((Entity *) item_entity);
-        level->setTileAndData(x, y, z, 0, 0);
-    }
-    show_particles_and_pop(level, (Entity *) player, x, y, z, false);
-
-    return 1;
-}
-
-static void NetherWandItem_interactEnemy(UNUSED Item *self, UNUSED ItemInstance *item, Mob *mob) {
-    if (mob->getEntityTypeId() == 12) {
-        // Zombify!
-        Mob *zombpig = MobFactory::CreateMob(36, mob->level);
-        ALLOC_CHECK(zombpig);
-        zombpig->moveTo(mob->x, mob->y, mob->z, mob->yaw, mob->pitch);
-        mob->level->addEntity((Entity *) zombpig);
-        mob->remove();
-        // Pop
-        show_particles_and_pop(zombpig->level, (Entity *) zombpig, zombpig->x, zombpig->y, zombpig->z, false);
-    }
-}
+};
 
 OVERWRITE_CALLS(GameMode_attack, void, GameMode_attack_injection, (GameMode_attack_t original, GameMode *self, Player *player, Entity *target)) {
     ItemInstance *held = player->inventory->getSelected();
@@ -176,31 +185,11 @@ OVERWRITE_CALLS(GameMode_attack, void, GameMode_attack_injection, (GameMode_atta
     return original(self, player, target);
 }
 
-static Item_vtable *get_nether_wand_item_vtable() {
-    static Item_vtable *vtable = NULL;
-    if (vtable == NULL) {
-        // Init
-        vtable = dup_vtable(Item_vtable_base);
-        ALLOC_CHECK(vtable);
-
-        // Modify
-        vtable->useOn = NetherWandItem_useOn;
-        vtable->interactEnemy = NetherWandItem_interactEnemy;
-        //vtable->hurtEnemy = NetherWandItem_hurtEnemy;
-    }
-    return vtable;
-}
-
 // Create Item
 static Item *nether_wand = NULL;
 void make_nether_wand() {
     // Construct
-    nether_wand = Item::allocate();
-    ALLOC_CHECK(nether_wand);
-    nether_wand->constructor(NETHER_WAND_ID - 256);
-
-    // Set VTable
-    nether_wand->vtable = get_nether_wand_item_vtable();
+    nether_wand = (new NetherWandItem(NETHER_WAND_ID - 256))->self;
 
     // Setup
     std::string name = "nether_wand";

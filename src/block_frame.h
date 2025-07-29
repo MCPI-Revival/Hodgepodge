@@ -4,7 +4,3 @@
 #define FRAME_TEXTURE 187
 
 void make_frame();
-
-EXTEND_STRUCT(FrameTileEntity, TileEntity, struct {
-    ItemInstance tile;
-});

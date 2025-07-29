@@ -4,6 +4,5 @@
 
 void make_pedestal();
 
-EXTEND_STRUCT(PedestalTileEntity, TileEntity, struct {
-    ItemInstance item;
-});
+struct PedestalTileEntity;
+ItemInstance &get_pedestal_item(PedestalTileEntity *pedestal);

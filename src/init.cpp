@@ -1,8 +1,8 @@
 #include <math.h>
 
-#include <libreborn/libreborn.h>
 #include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+#include <libreborn/util/util.h>
 #include <mods/title-screen/title-screen.h>
 
 #include "api.h"
@@ -73,8 +73,8 @@ static void mcpi_callback(Minecraft *mcpi) {
 
 // Add everything to the creative inventory
 #define ADD_ITEM_AUX(item_id, aux) do { \
+        if (Item::items[item_id] == NULL) WARN("Item #%i is NULL, this is very bad!", item_id); \
         ItemInstance *ii = new ItemInstance; \
-        ALLOC_CHECK(ii); \
         ii->count = 255; \
         ii->auxiliary = aux; \
         ii->id = item_id; \
@@ -84,7 +84,6 @@ static void mcpi_callback(Minecraft *mcpi) {
 
 static void Inventory_setupDefault_FillingContainer_addItem_call_injection(FillingContainer *filling_container) {
     ADD_ITEM(REDSTONE_ID);
-    //ADD_ITEM(75);
     ADD_ITEM(REPEATER_ID);
     ADD_ITEM(BELT_ID);
     ADD_ITEM(PEDESTAL_ID);
@@ -92,18 +91,13 @@ static void Inventory_setupDefault_FillingContainer_addItem_call_injection(Filli
     ADD_ITEM(BOMB_ITEM_ID);
     ADD_ITEM(DASH_ITEM_ID);
     ADD_ITEM(NETHER_WAND_ID);
-    ADD_ITEM(123);
     //ADD_ITEM(FRAME_TILE_ID);
-    // Piston
-    ADD_ITEM(33);
-    // Sticky piston
-    ADD_ITEM(29);
-    // Moving piston
-    //ADD_ITEM(36);
-    // Redstone block
-    ADD_ITEM(152);
-    // Active redstone block
-    ADD_ITEM(153);
+    ADD_ITEM(123); // Lamp
+    ADD_ITEM(33); // Piston
+    ADD_ITEM(29); // Sticky piston
+    //ADD_ITEM(36); // Moving piston
+    ADD_ITEM(152); // Redstone block
+    ADD_ITEM(153); // Active redstone block
     // OBBs
     /*for (int i = 0; i < 16; i++) {
         ADD_ITEM_AUX(OBB_ID, i);
@@ -224,6 +218,18 @@ static void Recipes_injection(Recipes *recipes) {
     line3 = "rrr";
     ingredients = {redstone};
     recipes->addShapedRecipe_3(rblock_item, line1, line2, line3, ingredients);
+
+    // Quartz block -> 4 quartz
+    RECIPE_ITEM(quartz_block, 'q', 155, 0);
+    ItemInstance quartz_item = {
+        .count = 4,
+        .id = 406,
+        .auxiliary = 0
+    };
+    ingredients = {quartz_block};
+    recipes->addShapelessRecipe(quartz_item, ingredients);
+    // Fix quartz being uncraftable even with a recipe
+    Item::items[406]->category = 8;
 }
 
 static void Tile_initTiles_injection() {
@@ -290,23 +296,22 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     real_title_screen_load_splashes()(splashes);
     // Add some cool splashes
     splashes.push_back("Type :music2: in chat!");
-    splashes.push_back("The very model of a modern major general");
-    splashes.push_back("Good guys, bad guys, and explosions!");
-    splashes.push_back("Drinking lava is a feature not a bug");
-    splashes.push_back("We *could* have backwards compat :(");
-    splashes.push_back("I'll tell me ma!");
-    splashes.push_back("Splish splash!");
-    splashes.push_back("Now with REDSTONE?!?!");
-    splashes.push_back("Go ye heros!");
-    splashes.push_back("I've got a little list!");
-    splashes.push_back("Poor wandering one");
+    splashes.push_back("Good Guys, Bad Guys, And Explosions!");
+    splashes.push_back("Drinking Lava Is A Feature Not A Bug");
+    splashes.push_back("I'll Tell Me Ma!");
+    splashes.push_back("Splish Splash!");
+    splashes.push_back("Now With REDSTONE?!?!");
+    splashes.push_back("Go Ye Heros!");
     splashes.push_back("NO SOUND AT ALL!");
-    splashes.push_back("'I didn't say that!' -TBR");
+    splashes.push_back("'I Didn't Say That!' -TBR");
     splashes.push_back("I \3 extract_from_bl_instruction"); // `\3` is a heart
-    splashes.push_back("Chestnace not included!"); // Or is it...?
-    splashes.push_back("Work in progress!");
+    splashes.push_back("Chestnace Not Included!"); // Or is it...?
+    splashes.push_back("Work In Progress!");
     splashes.push_back("Gold > Diamond!");
     splashes.push_back("Emeralds == Diamonds");
+    splashes.push_back("You'll Never Take Me Alive!");
+    splashes.push_back("Hand Me My Shovel!");
+    splashes.push_back("2013");
 }
 
 #ifdef FISH

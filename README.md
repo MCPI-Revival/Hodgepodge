@@ -36,7 +36,7 @@ Please only add one texture per pull request (except for where it makes sense, s
 
 #### Audio
 
-There are plans to add both ambient music and music disks, however for legal reasons I don't want to take these from modern minecraft. Currently this system doesn't exist, but feel free to submit music (in wav format), into the assets directory and I'll sort them out later. These need to be orignal and fit the the game.
+There are plans to add both ambient music and music disks, however for legal reasons I don't want to take these from modern minecraft. Currently this system doesn't exist, but feel free to submit music (in wav format), into the assets directory and I'll sort them out later. These need to be original and fit the the game.
 
 ### Code
 
