@@ -255,6 +255,8 @@ struct PistonBase final : CustomTile {
             id == 0
             // Liquids
             || (8 <= id && id <= 11)
+            // Snow layers
+            || id == 78
         ;
     }
     static bool pushable(Level *level, int x, int y, int z, int id) {
@@ -322,7 +324,7 @@ struct PistonBase final : CustomTile {
             if (!pushable(level, xo, yo, zo, id)) {
                 return false;
             }
-            // TODO: Breaking weak blocks
+            // TODO: Crushing blocks
             // Too long
             if (i == P_RANGE) return false;
             // Keep going
@@ -338,12 +340,12 @@ struct PistonBase final : CustomTile {
             int id = level->getTile(bx, by, bz);
             int meta = level->getData(bx, by, bz);
             if (id == self->id && bx == x && by == y && bz == z) {
-                level->setTileAndData(xo, yo, zo, 36, direction | (8 * sticky));
+                level->setTileAndDataNoUpdate(xo, yo, zo, 36, direction | (8 * sticky));
                 TileEntity *te = (new MovingPistonTE(34, direction | (sticky * 8), direction, true))->self;
                 te->level = level;
                 level->setTileEntity(xo, yo, zo, te);
             } else {
-                level->setTileAndData(xo, yo, zo, 36, meta);
+                level->setTileAndDataNoUpdate(xo, yo, zo, 36, meta);
                 TileEntity *te = (new  MovingPistonTE(id, meta, direction, true))->self;
                 te->level = level;
                 level->setTileEntity(xo, yo, zo, te);
@@ -359,6 +361,7 @@ struct PistonBase final : CustomTile {
         if (extending) {
             if (!extend(level, x, y, z, direction)) return;
             level->setData(x, y, z, direction | 8);
+            level->tileUpdated(x, y, z, self->id);
             return;
         }
         // Retract
@@ -371,17 +374,18 @@ struct PistonBase final : CustomTile {
             ((MovingPistonTE *) custom_get<CustomTileEntity>(te))->place();
         }
         // Retract the piston
-        level->setTileAndData(x, y, z, 36, direction);
+        level->setTileAndDataNoUpdate(x, y, z, 36, direction);
         te = (new MovingPistonTE(piston_head->id, direction | (8 * (self->id == sticky_piston_base->id)), direction, false))->self;
         te->level = level;
         level->setTileEntity(x, y, z, te);
+        level->tileUpdated(x, y, z, self->id);
         // Retract the block
         if (sticky) {
             ox += pis_dir[direction][0];
             oy += pis_dir[direction][1];
             oz += pis_dir[direction][2];
             int id = level->getTile(ox, oy, oz);
-            if (pushable(level, ox, oy, oz, id) && id != 0) {
+            if (pushable(level, ox, oy, oz, id) && !replacable(id)) {
                 int data = level->getData(ox, oy, oz);
                 ox -= pis_dir[direction][0];
                 oy -= pis_dir[direction][1];
@@ -390,6 +394,7 @@ struct PistonBase final : CustomTile {
                 te = (new MovingPistonTE(id, data, direction, false))->self;
                 te->level = level;
                 level->setTileEntity(ox, oy, oz, te);
+                // Remove the block being retracted
                 ox += pis_dir[direction][0];
                 oy += pis_dir[direction][1];
                 oz += pis_dir[direction][2];
@@ -406,14 +411,14 @@ struct PistonBase final : CustomTile {
     }
 
     void onRemove(Level *level, int x, int y, int z) override {
-        int data = level->getData(x, y, z);
+        /*int data = level->getData(x, y, z);
         int dir = (data & 0b0111);
         if (dir == 0b111 || !(data & 0b1000)) return;
         // Remove the head
         int xo = x + pis_dir[dir][0];
         int yo = y + pis_dir[dir][1];
         int zo = z + pis_dir[dir][2];
-        level->setTile(xo, yo, zo, 0);
+        level->setTile(xo, yo, zo, 0);*/
     }
 
     void neighborChanged(Level *level, int x, int y, int z, UNUSED int neighborId) override {
@@ -427,11 +432,9 @@ struct PistonBase final : CustomTile {
         bool hasNeighborSignal = getNeighborSignal(level, x, y, z, direction);
         if (hasNeighborSignal && !is_extended) {
             if (canPushLine(level, x, y, z, direction)) {
-                level->setTileAndDataNoUpdate(x, y, z, self->id, direction | 8);
                 move(level, x, y, z, true, direction);
             }
         } else if (!hasNeighborSignal && is_extended) {
-            level->setData(x, y, z, direction);
             move(level, x, y, z, false, direction);
         }
     }
@@ -630,9 +633,9 @@ struct PistonHead final : CustomTile {
         int yo = y - pis_dir[dir][1];
         int zo = z - pis_dir[dir][2];
         int id = level->getTile(xo, yo, zo);
-        int data = level->getData(xo, yo, zo);
-        if ((id != sticky_piston_base->id && id != piston_base->id) || data != (dir | 8)) {
-            level->setTile(x, y, z, 0);
+        int pdir = level->getData(xo, yo, zo) & 0b0111;
+        if ((id != sticky_piston_base->id && id != piston_base->id) || pdir != dir) {
+            if (id != 36) level->setTile(x, y, z, 0);
         }
     }
 

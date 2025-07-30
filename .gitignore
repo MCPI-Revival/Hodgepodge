@@ -1,8 +1,15 @@
 # Building stuff
 build/
 libredstone.so
-/cmake-build-*
-/.idea
+cmake-build-*
+CMakeCache.txt
+CMakeFiles/
+cmake/
+cmake_install.cmake
 
-# Secret stuff
+# Debugging
+.gdb_history
+peda-session-minecraft-pi-reborn.txt
+
+# Unreleased stuff
 src/portal.cpp

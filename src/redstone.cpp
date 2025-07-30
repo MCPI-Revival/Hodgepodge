@@ -65,10 +65,10 @@ static void updateWires(Level *level, int x, int y, int z) {
     level->updateNearbyTiles(x,     y,     z,     55);
     level->updateNearbyTiles(x - 1, y,     z,     55);
     level->updateNearbyTiles(x + 1, y,     z,     55);
-    level->updateNearbyTiles(x,     y - 1, z,     55);
-    level->updateNearbyTiles(x,     y + 1, z,     55);
     level->updateNearbyTiles(x,     y,     z - 1, 55);
     level->updateNearbyTiles(x,     y,     z + 1, 55);
+    level->updateNearbyTiles(x,     y - 1, z,     55);
+    level->updateNearbyTiles(x,     y + 1, z,     55);
 }
 
 bool canWireConnectTo(LevelSource *level, int x, int y, int z, int side) {
@@ -406,16 +406,16 @@ struct BaseRepeater : CustomTile {
         level->updateNearbyTiles(x - 1, y, z, self->id);
         level->updateNearbyTiles(x, y, z + 1, self->id);
         level->updateNearbyTiles(x, y, z - 1, self->id);
-        level->updateNearbyTiles(x, y - 1, z, self->id);
-        level->updateNearbyTiles(x, y + 1, z, self->id);
+        //level->updateNearbyTiles(x, y - 1, z, self->id);
+        //level->updateNearbyTiles(x, y + 1, z, self->id);
     }
 
     void setPlacedBy(Level *level, int x, int y, int z, Mob *placer) override {
         int face = (int) (std::floor((placer->yaw * 4.0) / 360.0 + 0.5) + 2) & 3;
         if (face == 0) {
-            face = 4;
+            face = 0;
         } else if (face == 1) {
-            face = 5;
+            face = 1;
         } else if (face == 2) {
             face = 2;
         } else if (face == 3) {
@@ -513,12 +513,12 @@ struct ActiveRedstoneBlock final : BaseRedstoneBlock {
     }
 
     void onPlaceOrRemove(Level *level, int x, int y, int z) {
-        level->updateNearbyTiles(x, y - 1, z, self->id);
-        level->updateNearbyTiles(x, y + 1, z, self->id);
         level->updateNearbyTiles(x - 1, y, z, self->id);
         level->updateNearbyTiles(x + 1, y, z, self->id);
         level->updateNearbyTiles(x, y, z - 1, self->id);
         level->updateNearbyTiles(x, y, z + 1, self->id);
+        level->updateNearbyTiles(x, y - 1, z, self->id);
+        level->updateNearbyTiles(x, y + 1, z, self->id);
     }
     void onPlace(Level *level, int x, int y, int z) override {
         onPlaceOrRemove(level, x, y, z);
@@ -616,12 +616,12 @@ struct RedstoneTorch final : CustomTile {
         int data = level->getData(x, y, z);
         data &= 0b1000;
         if (!data) return;
-        level->updateNearbyTiles(x, y - 1, z, self->id);
-        level->updateNearbyTiles(x, y + 1, z, self->id);
         level->updateNearbyTiles(x - 1, y, z, self->id);
         level->updateNearbyTiles(x + 1, y, z, self->id);
         level->updateNearbyTiles(x, y, z - 1, self->id);
         level->updateNearbyTiles(x, y, z + 1, self->id);
+        level->updateNearbyTiles(x, y - 1, z, self->id);
+        level->updateNearbyTiles(x, y + 1, z, self->id);
     }
     void onPlace(Level *level, int x, int y, int z) override {
         onPlaceOrRemove(level, x, y, z);
