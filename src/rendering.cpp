@@ -132,8 +132,9 @@ static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UN
     return true;
 }
 
-#define SET_HB(side, p) \
-    uv_s = UV_S; \
+#define PISTON_CROP_SIZE (4.f/256.f)
+#define SET_HB(side) \
+    uv_o = 0.f;  \
     if (dir == side) { \
         u = u_h; \
         v = v_h; \
@@ -144,30 +145,40 @@ static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UN
         u = u_s; \
         v = v_s; \
         /* Need to adjust for size */ \
-        uv_s = UV_S * p; \
+        uv_o = PISTON_CROP_SIZE * on; \
     }
 
 #define ROT_TEXT(s1, s2, s3, s4) \
     if (dir == s1) { \
-        us[0] = us[1] = u + uv_s; \
+        us[0] = us[1] = u + UV_S; \
         us[2] = us[3] = u; \
-        vs[1] = vs[2] = v + uv_s; \
-        vs[0] = vs[3] = v; \
-    } else if (dir == s2 || dir == s4) { \
+        vs[1] = vs[2] = v + UV_S; \
+        vs[0] = vs[3] = v + uv_o; \
+    } else if (dir == s2) { \
         us[0] = us[1] = u; \
-        us[2] = us[3] = u + uv_s; \
-        vs[1] = vs[2] = v; \
-        vs[0] = vs[3] = v + uv_s; \
+        us[2] = us[3] = u + UV_S; \
+        vs[1] = vs[2] = v + uv_o; \
+        vs[0] = vs[3] = v + UV_S; \
     } else if (dir == s3) { \
-        us[0] = us[3] = u + uv_s; \
+        us[0] = us[3] = u + UV_S; \
         us[2] = us[1] = u; \
-        vs[3] = vs[2] = v + uv_s; \
-        vs[0] = vs[1] = v; \
+        vs[3] = vs[2] = v + UV_S; \
+        vs[0] = vs[1] = v + uv_o; \
+    } else if (dir == s4) { \
+        us[0] = us[1] = u; \
+        us[2] = us[3] = u + UV_S; \
+        vs[1] = vs[2] = v; \
+        vs[0] = vs[3] = v + UV_S; \
+    } else if (dir == (s4 ^ 1)) { \
+        us[0] = us[3] = u; \
+        us[2] = us[1] = u + UV_S; \
+        vs[3] = vs[2] = v; \
+        vs[0] = vs[1] = v + UV_S; \
     } else { \
         us[0] = us[3] = u; \
-        us[2] = us[1] = u + uv_s; \
-        vs[3] = vs[2] = v; \
-        vs[0] = vs[1] = v + uv_s; \
+        us[2] = us[1] = u + UV_S; \
+        vs[3] = vs[2] = v + uv_o; \
+        vs[0] = vs[1] = v + UV_S; \
     }
 
 bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int data, Level *level) {
@@ -179,7 +190,8 @@ bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int dat
     t->color(brightness, brightness, brightness, 0xff);
     // Get textures
     int head = tile == sticky_piston_base ? PISTON_HEAD_TEXTURE_STICKY : PISTON_HEAD_TEXTURE;
-    if (data & 0b1000) head = PISTON_HEAD_TEXTURE_EXTENDED;
+    bool on = (data & 0b1000) != 0;
+    if (on) head = PISTON_HEAD_TEXTURE_EXTENDED;
     float u_h = (head & 0xf) << 4, v_h = (head & 0xf0);
     u_h /= 256.f;
     v_h /= 256.f;
@@ -189,7 +201,7 @@ bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int dat
     float u_b = (PISTON_BACK_TEXTURE & 0xf) << 4, v_b = (PISTON_BACK_TEXTURE & 0xf0);
     u_b /= 256.f;
     v_b /= 256.f;
-    float u, v, uv_s, us[4], vs[4];
+    float u, v, uv_s = UV_S, uv_o = 0.f, us[4], vs[4];
     // Get dir
     int dir = data & 0b0111;
     // Get AABB
@@ -201,44 +213,42 @@ bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int dat
         .y2 = y + 1.f,
         .z2 = z + 1.f
     };
-    if (level) {
-        aabb = *tile->getAABB(level, x, y, z);
-    }
+    if (level) aabb = *tile->getAABB(level, x, y, z);
     // Top and bottom
     // TODO Make it go back too
-    SET_HB(0, 1);
+    SET_HB(0);
     ROT_TEXT(2, 3, 5, 1);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[3], vs[3]);
-    SET_HB(1, 1);
+    SET_HB(1);
     ROT_TEXT(3, 2, 5, -1);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
     // aabb.x1 sides
-    SET_HB(2, 1);
+    SET_HB(2);
     ROT_TEXT(1, 0, 5, 2);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[3], vs[3]);
-    SET_HB(3, 1);
+    SET_HB(3);
     ROT_TEXT(1, 0, 4, 3);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[0], vs[0]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[1], vs[1]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[2], vs[2]);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[3], vs[3]);
     // aabb.z1 sides
-    SET_HB(4, 1);
+    SET_HB(4);
     ROT_TEXT(1, 0, 2, 4);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[0], vs[0]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
-    SET_HB(5, 1);
+    SET_HB(5);
     ROT_TEXT(1, 0, 3, 5);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);

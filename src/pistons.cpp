@@ -441,23 +441,31 @@ struct PistonBase final : CustomTile {
     }
 
     AABB *getAABB(UNUSED Level *level, int x, int y, int z) override {
-        //int data = level->getData(x, y, z);
-        //int dir = data & 0b0111, on = data & 0b1000;
+        int data = level->getData(x, y, z);
+        int dir = data & 0b0111, on = data & 0b1000;
         self->aabb.x1 = x;
         self->aabb.y1 = y;
         self->aabb.z1 = z;
         self->aabb.x2 = x + 1.f;
         self->aabb.y2 = y + 1.f;
         self->aabb.z2 = z + 1.f;
-        /*if (on && data != 0b1111) {
+        if (on && data != 0b1111) {
             if (dir == 0) {
-                self->aabb.y1 += 0.1;
+                self->aabb.y1 += 0.25;
             } else if (dir == 1) {
-                self->aabb.y2 -= 0.1;
+                self->aabb.y2 -= 0.25;
+            } else if (dir == 2) {
+                self->aabb.z1 += 0.25;
+            } else if (dir == 3) {
+                self->aabb.z2 -= 0.25;
+            } else if (dir == 4) {
+                self->aabb.x1 += 0.25;
+            } else if (dir == 5) {
+                self->aabb.x2 -= 0.25;
             }
         }
         // Set shape, it's wrong but why not?
-        self->x1 = self->aabb.x1;
+        /*self->x1 = self->aabb.x1;
         self->y1 = self->aabb.y1;
         self->z1 = self->aabb.z1;
         self->x2 = self->aabb.x2;
@@ -468,6 +476,28 @@ struct PistonBase final : CustomTile {
 
     bool isCubeShaped() override {
         return false;
+    }
+
+    void updateShape(LevelSource *level, int x, int y, int z) override {
+        int data = level->getData(x, y, z);
+        int dir = data & 0b0111, on = data & 0b1000;
+        AABB aabb{0, 0, 0, 1, 1, 1};
+        if (on && data != 0b1111) {
+            if (dir == 0) {
+                aabb.y1 += 0.25;
+            } else if (dir == 1) {
+                aabb.y2 -= 0.25;
+            } else if (dir == 2) {
+                aabb.z1 += 0.25;
+            } else if (dir == 3) {
+                aabb.z2 -= 0.25;
+            } else if (dir == 4) {
+                aabb.x1 += 0.25;
+            } else if (dir == 5) {
+                aabb.x2 -= 0.25;
+            }
+        }
+        setShape(aabb.x1, aabb.y1, aabb.z1, aabb.x2, aabb.y2, aabb.z2);
     }
 };
 
@@ -625,48 +655,47 @@ struct PistonHead final : CustomTile {
     static constexpr float AABB_HO = (1 - AABB_HI);
     static void setShapesCallback(Tile *self, int data, const std::function<void()> callback) {
         int dir = data & 0b0111;
-        // TODO: Handle silly piston head
-        if (dir == 0b111) return;
         switch (dir) {
             case 0b000:
                 self->setShape(0, 0, 0, 1.f, AABB_HI, 1.f);
                 callback();
-                self->setShape(AABB_BI, AABB_HI, AABB_BI, AABB_BO, 1.f, AABB_BO);
+                self->setShape(AABB_BI, AABB_HI, AABB_BI, AABB_BO, 1.25f, AABB_BO);
                 callback();
                 break;
             case 0b001:
                 self->setShape(0, AABB_HO, 0, 1.f, 1.f, 1.f);
                 callback();
-                self->setShape(AABB_BI, 0, AABB_BI, AABB_BO, AABB_HO, AABB_BO);
+                self->setShape(AABB_BI, -0.25f, AABB_BI, AABB_BO, AABB_HO, AABB_BO);
                 callback();
                 break;
             case 0b010:
                 self->setShape(0, 0, 0, 1.f, 1.f, AABB_HI);
                 callback();
-                self->setShape(AABB_BI, AABB_BI, AABB_HI, AABB_BO, AABB_BO, 1);
+                self->setShape(AABB_BI, AABB_BI, AABB_HI, AABB_BO, AABB_BO, 1.25f);
                 callback();
                 break;
             case 0b011:
                 self->setShape(0, 0, AABB_HO, 1.f, 1.f, 1.f);
                 callback();
-                self->setShape(AABB_BI, AABB_BI, 0, AABB_BO, AABB_BO, AABB_HO);
+                self->setShape(AABB_BI, AABB_BI, -0.25f, AABB_BO, AABB_BO, AABB_HO);
                 callback();
                 break;
             case 0b100:
                 self->setShape(0, 0, 0, AABB_HI, 1.f, 1.f);
                 callback();
-                self->setShape(AABB_HI, AABB_BI, AABB_BI, 1, AABB_BO, AABB_BO);
+                self->setShape(AABB_HI, AABB_BI, AABB_BI, 1.25f, AABB_BO, AABB_BO);
                 callback();
                 break;
             case 0b101:
                 self->setShape(AABB_HO, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
                 callback();
-                self->setShape(0, AABB_BI, AABB_BI, AABB_HO, AABB_BO, AABB_BO);
+                self->setShape(-0.25f, AABB_BI, AABB_BI, AABB_HO, AABB_BO, AABB_BO);
                 callback();
                 break;
             default:
                 break;
         }
+        // TODO: Handle "Silly Piston" head
         self->setShape(0, 0, 0, 1, 1, 1);
     }
     void addAABBs(Level *level, int x, int y, int z, const AABB *intersecting, std::vector<AABB> &aabbs) override {
