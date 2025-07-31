@@ -1,3 +1,5 @@
+#include <csignal>
+
 #include <functional>
 #include <cmath>
 
@@ -96,7 +98,6 @@ struct MovingPistonTE final : CustomTileEntity {
         float pos = 1 - pos;
         if (this->extending) pos = -pos;
         int dir = direction;
-        // There is a crash here for loading! `dir` is too big!
         aabb.x1 += pis_dir[dir][0] * pos;
         aabb.x2 += pis_dir[dir][0] * pos;
         aabb.y1 += pis_dir[dir][1] * pos;
@@ -137,29 +138,27 @@ struct MovingPistonTE final : CustomTileEntity {
     void load(CompoundTag *tag) override {
         TileEntity_load->get(false)(self, tag);
 
-        // TODO: Terrible!
-        /*std::string str = "move_id";
-        moving_id = CompoundTag_getShort(tag, &str);
+        std::string str = "move_id";
+        moving_id = (int) tag->getByte(str);
         str = "move_meta";
-        moving_meta = CompoundTag_getShort(tag, &str);
+        moving_meta = (int) tag->getByte(str);
         str = "direction";
-        direction = CompoundTag_getShort(tag, &str);
+        direction = (int) tag->getByte(str);
         str = "extending";
-        extending = CompoundTag_getShort(tag, &str);*/
+        extending = (int) tag->getByte(str);
     }
 
     bool save(CompoundTag *tag) override {
-        TileEntity_save->get(false)(self, tag);
+        if (!TileEntity_save->get(false)(self, tag)) return false;
 
-        // TODO: This just doesn't work!
-        /*std::string str = "move_id";
-        tag->putShort(str, moving_id);
+        std::string str = "move_id";
+        tag->putByte(str, (char) moving_id);
         str = "move_meta";
-        tag->putShort(str, moving_meta);
+        tag->putByte(str, (char) moving_meta);
         str = "extending";
-        tag->putShort(str, extending);
+        tag->putByte(str, (char) extending);
         str = "direction";
-        tag->putShort(str, direction);*/
+        tag->putByte(str, (char) direction);
         return true;
     }
 };

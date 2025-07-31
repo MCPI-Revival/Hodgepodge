@@ -95,6 +95,19 @@ OVERWRITE_CALLS(Mob_hurt, bool, Mob_hurt_injection, (Mob_hurt_t original, Mob *s
     return ret;
 }
 
+// Save tile entities on leaving the world, not just pausing
+OVERWRITE_CALLS(
+    Minecraft_leaveGame,
+    void, Minecraft_leaveGame_injection, (Minecraft_leaveGame_t orignal, Minecraft *mc, bool save_remote)
+) {
+    if (mc->generating_level || !mc->level_generation_signal) return;
+    if (mc->level && (!mc->level->is_client_side || save_remote)) {
+        mc->level->saveLevelData();
+        mc->level->saveGame();
+    }
+    orignal(mc, save_remote);
+}
+
 static void nop(){};
 __attribute__((constructor)) static void init() {
     misc_run_on_tick(on_tick);
