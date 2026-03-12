@@ -1,7 +1,5 @@
 #include <GLES/gl.h>
 
-#include <symbols/minecraft.h>
-
 #include "api.h"
 #include "init.h"
 #include "belt.h"
@@ -9,7 +7,20 @@
 #include "redstone.h"
 #include "rendering.h"
 #include "oddly_bright_block.h"
-#include "block_frame.h"
+
+#include <symbols/Tesselator.h>
+#include <symbols/TileRenderer.h>
+#include <symbols/Tile.h>
+#include <symbols/ItemRenderer.h>
+#include <symbols/Textures.h>
+#include <symbols/LevelSource.h>
+#include <symbols/Minecraft.h>
+#include <symbols/DynamicTexture.h>
+#include <symbols/Font.h>
+#include <symbols/Textures.h>
+#include <symbols/ItemInstance.h>
+#include <symbols/Tile.h>
+#include <symbols/Level.h>
 
 // The size of a single tile in terrain.png (16 / 256)
 constexpr float UV_S = 0.0625;
@@ -189,7 +200,7 @@ bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int dat
     brightness *= 256;
     t->color(brightness, brightness, brightness, 0xff);
     // Get textures
-    int head = tile == sticky_piston_base ? PISTON_HEAD_TEXTURE_STICKY : PISTON_HEAD_TEXTURE;
+    int head = tile->id == sticky_piston_base->id ? PISTON_HEAD_TEXTURE_STICKY : PISTON_HEAD_TEXTURE;
     bool on = (data & 0b1000) != 0;
     if (on) head = PISTON_HEAD_TEXTURE_EXTENDED;
     float u_h = (head & 0xf) << 4, v_h = (head & 0xf0);
@@ -261,6 +272,9 @@ bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int dat
 static bool TileRenderer_tesselatePedestalInWorld(TileRenderer *self, Tile *tile, float x, float y, float z, bool gui = false) {
     int old_texture = tile->texture;
 
+    // Weird trick for multithreading
+    tile = Tile::tiles[tile->id];
+
     // Shaft
     tile->texture = 213;
     tile->setShape(
@@ -313,21 +327,21 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     Tesselator *t = &Tesselator::instance;
     t->color(brightness * r, brightness * g, brightness * color, 0xff);
     // Get connectivity
-    bool connected_xm = canWireConnectTo(self->level, x - 1, y, z, 1) || (!self->level->isSolidRenderTile(x - 1, y, z) && canWireConnectTo(self->level, x - 1, y - 1, z, -1));
-    bool connected_xp = canWireConnectTo(self->level, x + 1, y, z, 3) || (!self->level->isSolidRenderTile(x + 1, y, z) && canWireConnectTo(self->level, x + 1, y - 1, z, -1));
-    bool connected_zm = canWireConnectTo(self->level, x, y, z - 1, 2) || (!self->level->isSolidRenderTile(x, y, z - 1) && canWireConnectTo(self->level, x, y - 1, z - 1, -1));
-    bool connected_zp = canWireConnectTo(self->level, x, y, z + 1, 0) || (!self->level->isSolidRenderTile(x, y, z + 1) && canWireConnectTo(self->level, x, y - 1, z + 1, -1));
-    if (!self->level->isSolidRenderTile(x, y + 1, z)) {
-        if (self->level->isSolidRenderTile(x - 1, y, z) && canWireConnectTo(self->level, x - 1, y + 1, z, -1)) {
+    bool connected_xm = canWireConnectTo(self->level, x - 1, y, z, 1) || (!isSolidRenderTile(self->level, x - 1, y, z) && canWireConnectTo(self->level, x - 1, y - 1, z, -1));
+    bool connected_xp = canWireConnectTo(self->level, x + 1, y, z, 3) || (!isSolidRenderTile(self->level, x + 1, y, z) && canWireConnectTo(self->level, x + 1, y - 1, z, -1));
+    bool connected_zm = canWireConnectTo(self->level, x, y, z - 1, 2) || (!isSolidRenderTile(self->level, x, y, z - 1) && canWireConnectTo(self->level, x, y - 1, z - 1, -1));
+    bool connected_zp = canWireConnectTo(self->level, x, y, z + 1, 0) || (!isSolidRenderTile(self->level, x, y, z + 1) && canWireConnectTo(self->level, x, y - 1, z + 1, -1));
+    if (!isSolidRenderTile(self->level, x, y + 1, z)) {
+        if (isSolidRenderTile(self->level, x - 1, y, z) && canWireConnectTo(self->level, x - 1, y + 1, z, -1)) {
             connected_xm = true;
         }
-        if (self->level->isSolidRenderTile(x + 1, y, z) && canWireConnectTo(self->level, x + 1, y + 1, z, -1)) {
+        if (isSolidRenderTile(self->level, x + 1, y, z) && canWireConnectTo(self->level, x + 1, y + 1, z, -1)) {
             connected_xp = true;
         }
-        if (self->level->isSolidRenderTile(x, y, z - 1) && canWireConnectTo(self->level, x, y + 1, z - 1, -1)) {
+        if (isSolidRenderTile(self->level, x, y, z - 1) && canWireConnectTo(self->level, x, y + 1, z - 1, -1)) {
             connected_zm = true;
         }
-        if (self->level->isSolidRenderTile(x, y, z + 1) && canWireConnectTo(self->level, x, y + 1, z + 1, -1)) {
+        if (isSolidRenderTile(self->level, x, y, z + 1) && canWireConnectTo(self->level, x, y + 1, z + 1, -1)) {
             connected_zp = true;
         }
     }
@@ -399,7 +413,7 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
         t->vertexUV(x2, y + 0.015625f, z1, u2, v1);
     }
     // Render going up walls
-    if (self->level->isSolidRenderTile(x, y + 1, z)) return true;
+    if (isSolidRenderTile(self->level, x, y + 1, z)) return true;
     if (shape == 0) {
         u1 = (REDSTONE_TEXTURE_S2 & 0xf) << 4; v1 = (REDSTONE_TEXTURE_S2 & 0xf0);
         u1 /= 256.f;
@@ -409,7 +423,7 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     }
     // Xm
     if (
-        self->level->isSolidRenderTile(x - 1, y, z)
+        isSolidRenderTile(self->level, x - 1, y, z)
         && self->level->getTile(x - 1, y + 1, z) == 55
     ) {
         t->vertexUV(x + 0.015625f, y + 1.021875f, z + 1, u2, v1);
@@ -419,7 +433,7 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     }
     // Xp
     if (
-        self->level->isSolidRenderTile(x + 1, y, z)
+        isSolidRenderTile(self->level, x + 1, y, z)
         && self->level->getTile(x + 1, y + 1, z) == 55
     ) {
         t->vertexUV((x + 1) - 0.015625f, y, z + 1, u1, v2);
@@ -430,7 +444,7 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     }
     // Zm
     if (
-        self->level->isSolidRenderTile(x, y, z - 1)
+        isSolidRenderTile(self->level, x, y, z - 1)
         && self->level->getTile(x, y + 1, z - 1) == 55
     ) {
         t->vertexUV(x + 1, y, z + 0.015625f, u1, v2);
@@ -440,7 +454,7 @@ static bool TileRenderer_tesselateDust(TileRenderer *self, Tile *tile, int x, in
     }
     // Zp
     if (
-        self->level->isSolidRenderTile(x, y, z + 1)
+        isSolidRenderTile(self->level, x, y, z + 1)
         && self->level->getTile(x, y + 1, z + 1) == 55
     ) {
         t->vertexUV(x + 1, y + 1.021875f, (z + 1) - 0.015625f, u2, v1);
@@ -511,6 +525,11 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
 }
 
 // Inject
+bool isSolidRenderTile(LevelSource *level, int x, int y, int z) {
+    int tile = level->getTile(x, y, z);
+    if (Tile::tiles[tile] == NULL) return false;
+    return Tile::tiles[tile]->isSolidRender();
+}
 OVERWRITE_CALLS(
     TileRenderer_tesselateInWorld,
     bool, TileRenderer_tesselateInWorld_injection, (TileRenderer_tesselateInWorld_t original, TileRenderer *self, Tile *tile, int x, int y, int z)

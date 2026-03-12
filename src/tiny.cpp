@@ -1,7 +1,20 @@
 // Some random tiny changes
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+
+#include <symbols/Player.h>
+#include <symbols/PrimedTnt.h>
+#include <symbols/ItemEntity.h>
+#include <symbols/Inventory.h>
+#include <symbols/Level.h>
+#include <symbols/Tile.h>
+#include <symbols/Minecraft.h>
+#include <symbols/LocalPlayer.h>
+#include <symbols/Entity.h>
+#include <symbols/DiggerItem.h>
+#include <symbols/DoorTile.h>
+#include <symbols/EntityFactory.h>
+#include <symbols/Material.h>
 
 #include "init.h"
 #include "api.h"
@@ -93,19 +106,6 @@ OVERWRITE_CALLS(Mob_hurt, bool, Mob_hurt_injection, (Mob_hurt_t original, Mob *s
     self->velocity_y += attacker->velocity_y * (speed / 7);
     self->velocity_z += attacker->velocity_z * speed;
     return ret;
-}
-
-// Save tile entities on leaving the world, not just pausing
-OVERWRITE_CALLS(
-    Minecraft_leaveGame,
-    void, Minecraft_leaveGame_injection, (Minecraft_leaveGame_t orignal, Minecraft *mc, bool save_remote)
-) {
-    if (mc->generating_level || !mc->level_generation_signal) return;
-    if (mc->level && (!mc->level->is_client_side || save_remote)) {
-        mc->level->saveLevelData();
-        mc->level->saveGame();
-    }
-    orignal(mc, save_remote);
 }
 
 static void nop(){};

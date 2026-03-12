@@ -1,6 +1,13 @@
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+#include <symbols/Entity.h>
+#include <symbols/Throwable.h>
+#include <symbols/Level.h>
+#include <symbols/Player.h>
+#include <symbols/EntityRenderDispatcher.h>
+#include <symbols/HitResult.h>
+#include <symbols/Mth.h>
+#include <symbols/ItemSpriteRenderer.h>
 
 #include "api.h"
 #include "ender_pearls.h"
@@ -22,7 +29,7 @@ struct EnderPearl final : CustomThrowable {
         e->hurt(nullptr, 4);
     }
 
-    int getEntityTypeId() override {
+    int getEntityTypeId() const override {
         return ENDER_PEARL_ID;
     }
 };
@@ -42,7 +49,7 @@ struct EnderPearlItem final : CustomItem {
         level->playSound((Entity *) player, name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
         // Spawn the entity
-        level->addEntity((Entity *) (new EnderPearl(level, (Entity *) player))->self);
+        level->addEntity((Entity *) (Throwable *) ((new EnderPearl(level, (Entity *) player))->self));
 
         return item;
     }

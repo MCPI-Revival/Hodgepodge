@@ -1,4 +1,7 @@
-#include <symbols/minecraft.h>
+#include <symbols/TripodCamera.h>
+#include <symbols/Minecraft.h>
+#include <symbols/LocalPlayer.h>
+#include <symbols/IMoveInput.h>
 
 #include "init.h"
 #include "api.h"

@@ -1,9 +1,19 @@
 #include <sstream>
 
 #include <libreborn/util/util.h>
-#include <symbols/minecraft.h>
 #include <mods/chat/chat.h>
 #include <mods/misc/misc.h>
+#include <symbols/Minecraft.h>
+#include <symbols/Entity.h>
+#include <symbols/ChatPacket.h>
+#include <symbols/OffsetPosTranslator.h>
+#include <symbols/Vec3.h>
+#include <symbols/EntityFactory.h>
+#include <symbols/MobFactory.h>
+#include <symbols/CommandServer.h>
+#include <symbols/Level.h>
+#include <symbols/LocalPlayer.h>
+#include <symbols/Inventory.h>
 
 #include "api.h"
 #include "bomb.h"
@@ -107,7 +117,6 @@ static std::map<std::string, std::string> emojis = {
     {"dot", "\7"},
     {"dot2", "\10"},
     {"ring", "\11"},
-    {"ring2", "\12"},
     {"male", "\13"},
     {"female", "\14"},
     {"music", "\15"},
@@ -149,8 +158,12 @@ static void replace_mojis(std::string &text) {
 HOOK(chat_handle_packet_send, void, (const Minecraft *minecraft_, ChatPacket *packet)) {
     Minecraft *minecraft = (Minecraft *) minecraft_;
     if (packet->message.c_str()[0] != '/' || packet->message.c_str()[1] == '/' || minecraft->level->is_client_side) {
+        if (packet->message.c_str()[1] == '/') {
+            packet->message.erase(0, 1);
+        }
         replace_mojis(packet->message);
         real_chat_handle_packet_send()(minecraft, packet);
+        return;
     }
     // It's a command
     char *message = (char *) packet->message.c_str() + 1;
@@ -236,5 +249,26 @@ HOOK(chat_handle_packet_send, void, (const Minecraft *minecraft_, ChatPacket *pa
         }
         entity->moveTo(pos.x, pos.y, pos.z, 0, 0);
         minecraft->level->addEntity(entity);
+    } else if (content == "emojis") {
+        minecraft->gui.addMessage("Available emojis:");
+        std::string content = "";
+        for (auto &i : emojis) if (i.first != "FG6") {
+            content += ", :" + i.first + ": = " + i.second;
+        }
+        content.erase(0, 2);
+        minecraft->gui.addMessage(content);
+    } else if (content == "help") {
+        minecraft->gui.addMessage("---- Hodgepodge Commands ----");
+        minecraft->gui.addMessage("/help           help");
+        minecraft->gui.addMessage("/gamemode [01]  changes gamemode");
+        minecraft->gui.addMessage("/clear          clears inventory");
+        minecraft->gui.addMessage("/inv            resets inventory");
+        minecraft->gui.addMessage("/kill_items     kills all items");
+        minecraft->gui.addMessage("/kill_all       kills everything");
+        minecraft->gui.addMessage("/emojis         list emojis");
+        minecraft->gui.addMessage("/summon [mob] <[x] [y] [z]>");
+    } else {
+        // Unknown command, forward it
+        minecraft->gui.addMessage("Unknown command \"" + content + "\"! Use /help for help or use //<text> to send /<text>");
     }
 }

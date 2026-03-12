@@ -6,7 +6,23 @@
 #include <GLES/gl.h>
 
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
+#include <symbols/Level.h>
+#include <symbols/Entity.h>
+#include <symbols/TileEntity.h>
+#include <symbols/TileEntityFactory.h>
+#include <symbols/Mob.h>
+#include <symbols/Level.h>
+#include <symbols/Minecraft.h>
+#include <symbols/ChestTileEntity.h>
+#include <symbols/Material.h>
+#include <symbols/EntityTile.h>
+#include <symbols/TileRenderer.h>
+#include <symbols/ItemRenderer.h>
+#include <symbols/TileEntityRenderDispatcher.h>
+#include <symbols/LevelSource.h>
+#include <symbols/EntityFactory.h>
+#include <symbols/ItemEntity.h>
+#include <symbols/TileEntityRenderer.h>
 
 #include "rendering.h"
 #include "piston.h"
@@ -216,7 +232,7 @@ struct PistonBase final : CustomTile {
             if (is_extended && data != 7) {
                 return PISTON_HEAD_TEXTURE_EXTENDED;
             }
-            if (((PistonBase *) self)->sticky) {
+            if (((PistonBase *)(Tile *) self)->sticky) {
                 return PISTON_HEAD_TEXTURE_STICKY;
             } else {
                 return PISTON_HEAD_TEXTURE;
@@ -355,6 +371,10 @@ struct PistonBase final : CustomTile {
         }
         return true;
     }
+    /*void replaceTileEntity(Level *level, int x, int y, int z, MovingPistonTE *newer) {
+        TileEntity *older = level->getTileEntity(ox, oy, oz);
+        if
+    }*/
     void move(Level *level, int x, int y, int z, bool extending, int data) {
         int direction = data & 0b0111;
         if (extending) {
@@ -577,7 +597,7 @@ struct MovingPiston final : CustomEntityTile {
             Tile *t = Tile::tiles[((MovingPistonTE *) custom_get<CustomTileEntity>(te))->moving_id];
             t->getAABB(level, x, y, z);
         }
-        return Tile_getAABB->get(false)((Tile *) self, level, x, y, z);
+        return Tile_getAABB->get(false)((Tile *)(EntityTile *) self, level, x, y, z);
     }
 
     void addAABBs(Level *level, int x, int y, int z, const AABB *intersecting, std::vector<AABB> &aabbs) override {
@@ -586,13 +606,13 @@ struct MovingPiston final : CustomEntityTile {
             Tile *t = Tile::tiles[((MovingPistonTE *) custom_get<CustomTileEntity>(te))->moving_id];
             t->addAABBs(level, x, y, z, intersecting, aabbs);
         }
-        return Tile_addAABBs->get(false)((Tile *) self, level, x, y, z, intersecting, aabbs);
+        return Tile_addAABBs->get(false)((Tile *)(EntityTile *) self, level, x, y, z, intersecting, aabbs);
     }
 };
 
 static void make_moving_piston(int id) {
     // TODO: wood sound -> stone
-    piston_moving = (new MovingPiston(id, INVALID_TEXTURE, Material::wood))->self;
+    piston_moving = (new MovingPiston(id, -id, Material::wood))->self;
 
     // Init
     piston_moving->init();

@@ -1,7 +1,16 @@
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 
 #include "api.h"
+#include <symbols/Animal.h>
+#include <symbols/Entity.h>
+#include <symbols/Player.h>
+#include <symbols/Inventory.h>
+#include <symbols/PathfinderMob.h>
+#include <symbols/Chicken.h>
+#include <symbols/Cow.h>
+#include <symbols/Pig.h>
+#include <symbols/Sheep.h>
+#include <symbols/Level.h>
 
 static int get_sign(int i) {
     if (i == 0) return 0;

@@ -1,9 +1,11 @@
 // Stores helper macros and symbols
 #pragma once
 
-#include <symbols/minecraft.h>
+#include <symbols/Item.h>
+#include <symbols/Tile.h>
 #include <libreborn/patch.h>
 #include <cstring>
+#include <symbols/CompoundTag.h>
 
 /*
 #define _HOOK_FROM_CALL(call, ret, name, args, fn_name, prefix) \

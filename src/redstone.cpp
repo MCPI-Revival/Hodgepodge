@@ -1,8 +1,14 @@
 #include <cmath>
 
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
+#include <mods/feature/feature.h>
 #include <mods/misc/misc.h>
+#include <symbols/Level.h>
+#include <symbols/TilePlanterItem.h>
+#include <symbols/LevelSource.h>
+#include <symbols/Vec3.h>
+#include <symbols/Mob.h>
+#include <symbols/Material.h>
 
 #include "api.h"
 #include "redstone.h"
@@ -19,6 +25,12 @@ static Tile *redstone_torch = NULL;
 static Tile *lamp = NULL;
 static Tile *active_lamp = NULL;
 
+// Work around for multithreading
+static bool isSolidRenderTileMap[256] = {0};
+/*bool isSolidRenderTile(LevelSource *level, int x, int y, int z) {
+    return isSolidRenderTileMap[level->getTile(x, y, z)];
+}*/
+
 int RedStoneOreTile_getResource_injection(UNUSED Tile *t, UNUSED int data, UNUSED Random *random) {
     return REDSTONE_ID;
 }
@@ -34,7 +46,7 @@ static bool canBePlacedOn(Level *level, int x, int y, int z) {
         || level->isSolidRenderTile(x, y, z);
 }
 
-static void make_redstone_tileitems() {
+void make_redstone_tileitems() {
     // Redstone dust
     // TilePlanterItem's constructor was inlined
     redstone = (Item *) TilePlanterItem::allocate();
@@ -55,6 +67,10 @@ static void make_redstone_tileitems() {
     repeater_item->setDescriptionId(name);
     repeater_item->category = 2;
     repeater_item->texture = 86;
+
+    for (int i = 0; i < 256; i++) if (Tile::tiles[i] != NULL) {
+        isSolidRenderTileMap[i] = Tile::tiles[i]->isSolidRender();
+    }
 }
 
 // Redstone tile
@@ -302,7 +318,12 @@ struct RedstoneWire final : CustomTile {
 
 static void make_repeater();
 void make_redstone_wire() {
-    // Redstone blocks
+    // Threading issues
+    if (feature_has("Multithreaded Chunk Rebuilding", server_disabled)) {
+        //ERR("Hodgepodge does not work with 'Multithreaded Chunk Rebuilding' currently! Please disable either that feature, or Hodgepodge and try again");
+    }
+
+    // Redstone wire blocks
     redstone_wire = (new RedstoneWire(55, 164, Material::glass))->self;
 
     // Init
@@ -314,7 +335,6 @@ void make_redstone_wire() {
     redstone_wire->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
 
     make_repeater();
-    make_redstone_tileitems();
 }
 
 // Repeater
@@ -714,6 +734,8 @@ void make_lamp(int id, bool active) {
     new_lamp->init();
     new_lamp->setDestroyTime(0.3f);
     new_lamp->category = 4;
+    std::string name = "lamp";
+    new_lamp->setDescriptionId(name);
 
     if (active) {
         active_lamp = new_lamp;

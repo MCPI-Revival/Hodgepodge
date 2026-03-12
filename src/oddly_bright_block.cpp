@@ -1,5 +1,7 @@
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
+#include <symbols/Material.h>
+#include <symbols/TripodCamera.h>
+#include <symbols/Tile.h>
 
 #include "api.h"
 #include "oddly_bright_block.h"

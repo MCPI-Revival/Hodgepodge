@@ -1,8 +1,20 @@
 #include <cmath>
 
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+#include <symbols/Item.h>
+#include <symbols/Mth.h>
+#include <symbols/Level.h>
+#include <symbols/Entity.h>
+#include <symbols/Random.h>
+#include <symbols/TileEntity.h>
+#include <symbols/GameMode.h>
+#include <symbols/Player.h>
+#include <symbols/ItemEntity.h>
+#include <symbols/Mob.h>
+#include <symbols/Inventory.h>
+#include <symbols/EntityFactory.h>
+#include <symbols/MobFactory.h>
 
 #include "api.h"
 #include "nether_wand.h"

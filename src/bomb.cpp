@@ -1,8 +1,16 @@
 #include <math.h>
 
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+#include <symbols/HitResult.h>
+#include <symbols/Throwable.h>
+#include <symbols/Entity.h>
+#include <symbols/Mob.h>
+#include <symbols/Player.h>
+#include <symbols/Mth.h>
+#include <symbols/EntityRenderDispatcher.h>
+#include <symbols/Level.h>
+#include <symbols/ItemSpriteRenderer.h>
 
 #include "api.h"
 #include "bomb.h"
@@ -31,7 +39,7 @@ struct Bomb final : CustomThrowable {
         // Sound
         float f = Mth::_random.genrand_int32();
         std::string name = "random.explode";
-        self->level->playSound((Entity *) self, name, 0.5, 0.4 / (f * 0.4 + 0.8));
+        self->level->playSound((Entity *) (Throwable *) self, name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
         // Particle
         std::string part = "explode";
@@ -41,7 +49,7 @@ struct Bomb final : CustomThrowable {
         constexpr float radius = 5;
         constexpr float blast_back = 2;
         AABB aabb{self->x - radius, self->y - radius, self->z - radius, self->x + radius, self->y + radius, self->z + radius};
-        std::vector<Entity *> *entities = self->level->getEntities((Entity *) self, aabb);
+        std::vector<Entity *> *entities = self->level->getEntities((Entity *) (Throwable *) self, aabb);
         for (Entity *e : *entities) {
             if (!e || (e->isMob() && ((Mob *) e)->health <= 0)) continue;
             // Get dist
@@ -75,7 +83,7 @@ struct Bomb final : CustomThrowable {
         Throwable_tick->get(false)(self);
     }
 
-    int getEntityTypeId() override {
+    int getEntityTypeId() const override {
         return BOMB_ID;
     }
 };
@@ -95,7 +103,7 @@ struct BombItem final : CustomItem {
         level->playSound((Entity *) player, name, 0.5, 0.4 / (f * 0.4 + 0.8));
 
         // Spawn the entity
-        level->addEntity((Entity *) (new Bomb(level, (Entity *) player))->self);
+        level->addEntity((Entity *) (Throwable *) (new Bomb(level, (Entity *) player))->self);
 
         return item;
     }

@@ -3,8 +3,22 @@
 #include <GLES/gl.h>
 
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+#include <symbols/TileEntity.h>
+#include <symbols/TileEntityFactory.h>
+#include <symbols/EntityRenderer.h>
+#include <symbols/ChestTileEntity.h>
+#include <symbols/Level.h>
+#include <symbols/Player.h>
+#include <symbols/Inventory.h>
+#include <symbols/ItemEntity.h>
+#include <symbols/Material.h>
+#include <symbols/EntityTile.h>
+#include <symbols/EntityRenderDispatcher.h>
+#include <symbols/EntityFactory.h>
+#include <symbols/ItemInHandRenderer.h>
+#include <symbols/TileEntityRenderDispatcher.h>
+#include <symbols/TileEntityRenderer.h>
 
 #include "api.h"
 #include "init.h"
@@ -152,6 +166,7 @@ struct Pedestal : CustomEntityTile {
 
     int getRenderShape() override {
         // Hack for gui renderering
+        // Don't remove or it will crash (I think when trying to gen the atlas, not sure)
         return 49 * (self && self->y1 == 0 && self->y2 == 1);
     }
 
@@ -169,14 +184,14 @@ struct Pedestal : CustomEntityTile {
         return false;
     }
 
-    TileEntity *newTileEntity() {
+    TileEntity *newTileEntity() override {
         return (TileEntity *) (new PedestalTileEntity(47))->self;
     }
 };
 
 void make_pedestal() {
     // Construct
-    pedestal = (new Pedestal(PEDESTAL_ID, INVALID_TEXTURE, Material::glass))->self;
+    pedestal = (new Pedestal(PEDESTAL_ID, -PEDESTAL_ID, Material::glass))->self;
 
     // Init
     pedestal->init();

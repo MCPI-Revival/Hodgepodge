@@ -1,8 +1,12 @@
 #include <cmath>
 
 //#include <libreborn/libreborn.h>
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
+#include <symbols/Item.h>
+#include <symbols/ItemInstance.h>
+#include <symbols/Level.h>
+#include <symbols/Player.h>
+#include <symbols/Mth.h>
 
 #include "api.h"
 #include "dash.h"

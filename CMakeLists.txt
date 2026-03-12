@@ -23,7 +23,6 @@ add_library(redstone SHARED
     src/ender_pearls.cpp
     src/bomb.cpp
     src/init.cpp
-    src/block_frame.cpp
     src/animal-following.cpp
     src/rendering.cpp
     src/redstone.cpp

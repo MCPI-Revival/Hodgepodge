@@ -2,7 +2,13 @@
 
 //#include <libreborn/libreborn.h>
 #include <libreborn/patch.h>
-#include <symbols/minecraft.h>
+#include <symbols/Level.h>
+#include <symbols/Tile.h>
+#include <symbols/Entity.h>
+#include <symbols/Player.h>
+#include <symbols/Inventory.h>
+#include <symbols/ItemEntity.h>
+#include <symbols/Material.h>
 
 #include "api.h"
 #include "belt.h"
@@ -10,11 +16,6 @@
 static Tile *conveyorbelt = NULL;
 struct ConveyorBelt final : CustomTile {
     ConveyorBelt(const int id, const int texture, const Material *material): CustomTile(id, texture, material) {}
-
-    // Item Textures
-    int getTexture2(UNUSED int face, UNUSED int data) override {
-        return BELT_ITEM_TEXTURE;
-    }
 
     // Rendering
     bool isSolidRender() override {
@@ -130,7 +131,7 @@ OVERWRITE_CALLS(ItemEntity_playerTouch, void, ItemEntity_playerTouch_injection, 
 // Makes the conveyorbelts
 void make_conveyorbelt() {
     // Construct
-    conveyorbelt = (new ConveyorBelt(BELT_ID, BELT_ITEM_TEXTURE, Material::metal))->self;
+    conveyorbelt = (new ConveyorBelt(BELT_ID, -BELT_ID, Material::metal))->self;
     conveyorbelt->updateDefaultShape();
 
     // Init

@@ -1,9 +1,12 @@
 #include <math.h>
 
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
 #include <libreborn/util/util.h>
 #include <mods/title-screen/title-screen.h>
+#include <symbols/FillingContainer.h>
+#include <symbols/Recipes.h>
+#include <symbols/I18n.h>
+#include <symbols/Recipes.h>
 
 #include "api.h"
 //#include "achievements.h"
@@ -14,7 +17,6 @@
 #include "pedestal.h"
 #include "belt.h"
 #include "dash.h"
-#include "block_frame.h"
 #include "init.h"
 #include "redstone.h"
 //#include "inventory.h"
@@ -91,7 +93,6 @@ static void Inventory_setupDefault_FillingContainer_addItem_call_injection(Filli
     ADD_ITEM(BOMB_ITEM_ID);
     ADD_ITEM(DASH_ITEM_ID);
     ADD_ITEM(NETHER_WAND_ID);
-    //ADD_ITEM(FRAME_TILE_ID);
     ADD_ITEM(123); // Lamp
     ADD_ITEM(33); // Piston
     ADD_ITEM(29); // Sticky piston
@@ -236,7 +237,6 @@ static void Tile_initTiles_injection() {
     make_conveyorbelt();
     make_oddly_bright_blocks();
     make_pedestal();
-    make_frame();
     make_pistons();
     make_redstone_blocks();
     make_redstone_wire();
@@ -249,7 +249,7 @@ static void Item_initItems_injection() {
     make_nether_wand();
     make_bomb();
     make_dash();
-    //make_redstone();
+    make_redstone_tileitems();
 }
 
 static void Language_injection() {
@@ -258,6 +258,7 @@ static void Language_injection() {
     I18n::_strings.insert(std::make_pair("item.ender_pearl.name", "Ender Pearl"));
     I18n::_strings.insert(std::make_pair("desc.ender_pearl", "Throw it to teleport"));
     I18n::_strings.insert(std::make_pair("item.redstoneDust.name", "Redstone Dust"));
+    I18n::_strings.insert(std::make_pair("tile.redstone.name", "Redstone Dust"));
     I18n::_strings.insert(std::make_pair("desc.redstoneDust", "Don't get your hopes up"));
     I18n::_strings.insert(std::make_pair("item.bomb.name", "Bomb"));
     I18n::_strings.insert(std::make_pair("desc.bomb", "Do you want to explode?"));
@@ -269,7 +270,6 @@ static void Language_injection() {
     //I18n::_strings.insert(std::make_pair("desc.ConveyorBelt", "Move stuff around with this!"));
     I18n::_strings.insert(std::make_pair("tile.Oddly Bright Block.name", "Oddly Bright Block"));
     //I18n::_strings.insert(std::make_pair("desc.Oddly Bright Block", "Why is it so oddly bright?"));
-    I18n::_strings.insert(std::make_pair("tile.frame.name", "Block Frame"));
     // Desc: Allow you to shape blocks
     I18n::_strings.insert(std::make_pair("tile.pedestal.name", "Pedestal"));
     // Desc: Just the thing for showing off your rock collection
@@ -278,6 +278,10 @@ static void Language_injection() {
     I18n::_strings.insert(std::make_pair("tile.pistonSticky.name", "Sticky Piston"));
     I18n::_strings.insert(std::make_pair("tile.redstone_block.name", "Redstone Block"));
     I18n::_strings.insert(std::make_pair("tile.active_redstone_block.name", "Active Redstone Block"));
+    I18n::_strings.insert(std::make_pair("item.repeater.name", "Repeater"));
+    I18n::_strings.insert(std::make_pair("desc.repeater", "Redstone Repeater"));
+    I18n::_strings.insert(std::make_pair("tile.repeater.name", "Repeater"));
+    I18n::_strings.insert(std::make_pair("tile.lamp.name", "Redstone Lamp"));
 
     // Lang fixes that needed changes in tiny.cpp
     I18n::_strings.insert(std::make_pair("tile.waterStill.name", "Still Water"));
@@ -309,9 +313,6 @@ HOOK(title_screen_load_splashes, void, (std::vector<std::string> &splashes)) {
     splashes.push_back("Work In Progress!");
     splashes.push_back("Gold > Diamond!");
     splashes.push_back("Emeralds == Diamonds");
-    splashes.push_back("You'll Never Take Me Alive!");
-    splashes.push_back("Hand Me My Shovel!");
-    splashes.push_back("2013");
 }
 
 #ifdef FISH

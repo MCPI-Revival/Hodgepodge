@@ -1,5 +1,4 @@
 #if 0
-#include <symbols/minecraft.h>
 #include <mods/misc/misc.h>
 
 #include "init.h"
