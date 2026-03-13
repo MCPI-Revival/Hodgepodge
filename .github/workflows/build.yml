@@ -1,0 +1,47 @@
+# Triggers
+name: 'CI'
+on:
+  - push
+
+# Jobs
+jobs:
+    # Build Project
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout Repository
+            uses: actions/checkout@v4
+
+            # Dependencies
+          - name: Install Toolchain
+            run: |
+                sudo apt-get update
+                sudo apt-get install -y \
+                    cmake \
+                    ninja-build \
+                    crossbuild-essential-armhf
+          - name: Install SDK
+            run: |
+                curl -L -o reborn 'https://gitea.thebrokenrail.com/minecraft-pi-reborn/minecraft-pi-reborn/releases/download/3.0.0/minecraft-pi-reborn-3.0.0-amd64.AppImage'
+                chmod +x reborn
+                ./reborn --appimage-extract-and-run --copy-sdk
+                rm -f reborn
+
+            # Build
+          - name: Configure
+            run: |
+                mkdir build
+                cd build
+                cmake -GNinja ..
+          - name: Build
+            run: |
+                cd build
+                cmake --build .
+
+            # Upload
+          - name: Upload Artifacts
+            uses: actions/upload-artifact@v4
+            with:
+                path: build/*.so
+                if-no-files-found: error
