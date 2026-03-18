@@ -338,7 +338,6 @@ void make_redstone_wire() {
 }
 
 // Repeater
-bool repeater_rendering_torches = false;
 struct BaseRepeater : CustomTile {
     BaseRepeater(const int id, const int texture, const Material *material): CustomTile(id, texture, material) {}
 
@@ -363,7 +362,7 @@ struct BaseRepeater : CustomTile {
         return 1;
     }
     int getTexture1(int face) override {
-        if (repeater_rendering_torches) {
+        if (face == 0) {
             return self->id == active_repeater->id ? 3+16*6 : 3+16*7;
         }
         return self->texture;
@@ -460,6 +459,11 @@ struct BaseRepeater : CustomTile {
     int getResource(UNUSED int data, UNUSED Random *random) override {
         return REPEATER_ID;
     }
+
+    bool shouldRenderFace(UNUSED LevelSource *level, UNUSED int x, UNUSED int y, UNUSED int z, int face) override {
+        if (face == 0 || face == 1) return false;
+        return true;
+    }
 };
 
 struct Repeater final : BaseRepeater {
@@ -499,8 +503,8 @@ static void make_repeater() {
     std::string name = "repeater";
     inactive_repeater->setDescriptionId(name);
     active_repeater  ->setDescriptionId(name);
-    inactive_repeater->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
-    active_repeater  ->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.0625f, 1.0f);
+    inactive_repeater->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.125f, 1.0f);
+    active_repeater  ->setShape(0.0f, 0.0f, 0.0f, 1.0f, 0.125f, 1.0f);
 }
 
 

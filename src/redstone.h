@@ -10,4 +10,3 @@ void make_redstone_wire();
 void make_redstone_blocks();
 void make_redstone_tileitems();
 void make_lamp(int id, bool active);
-extern bool repeater_rendering_torches;

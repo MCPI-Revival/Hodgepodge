@@ -475,7 +475,7 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
 	float brightness = tile->getBrightness(self->level, x, y, z);
     brightness *= 256;
 	t->color(brightness, brightness, brightness, 255);
-    static float delay_offset[] = {-0.0625, 0.0625, 0.1875, 0.3125};
+    static float delay_offset[] = {-0.125, 0.125, 0.1875, 0.3125};
     float tx1 = 0, tx2 = 0, tz1 = 0, tz2 = 0, ty = -0.1875;
     float txzo = -0.3125;
     if (dir == 0 || dir == 2) {
@@ -487,10 +487,10 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
         tx2 = txzo * m;
         tx1 = delay_offset[delay] * m;
     }
-    repeater_rendering_torches = true;
+
     self->tesselateTorch(tile, x + tx1, y + ty, z + tz1, 0, 0);
     self->tesselateTorch(tile, x + tx2, y + ty, z + tz2, 0, 0);
-    repeater_rendering_torches = false;
+
     // Render rotated base
     float u = (tile->texture & 0xf) << 4, v = (tile->texture & 0xf0);
     u /= 256.f;
@@ -517,10 +517,11 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
         vs[3] = vs[2] = v;
         vs[0] = vs[1] = v + UV_S;
     }
-    t->vertexUV(x + 1, y + 0.0625f, z + 1, us[0], vs[0]);
-    t->vertexUV(x + 1, y + 0.0625f, z,     us[1], vs[1]);
-    t->vertexUV(x,     y + 0.0625f, z,     us[2], vs[2]);
-    t->vertexUV(x,     y + 0.0625f, z + 1, us[3], vs[3]);
+    // Top
+    t->vertexUV(x + 1, y + 0.125f, z + 1, us[0], vs[0]);
+    t->vertexUV(x + 1, y + 0.125f, z,     us[1], vs[1]);
+    t->vertexUV(x,     y + 0.125f, z,     us[2], vs[2]);
+    t->vertexUV(x,     y + 0.125f, z + 1, us[3], vs[3]);
     return true;
 }
 
