@@ -197,6 +197,31 @@ OVERWRITE_CALLS(TileEntity_initTileEntities, void, TileEntity_initTileEntities_i
 }
 
 // Piston Tile
+void Piston_getAABB(AABB *aabb, int x, int y, int z, int data) {
+    int dir = data & 0b0111, on = data & 0b1000;
+    aabb->x1 = x;
+    aabb->y1 = y;
+    aabb->z1 = z;
+    aabb->x2 = x + 1.f;
+    aabb->y2 = y + 1.f;
+    aabb->z2 = z + 1.f;
+    if (on && data != 0b1111) {
+        if (dir == 0) {
+            aabb->y1 += 0.25;
+        } else if (dir == 1) {
+            aabb->y2 -= 0.25;
+        } else if (dir == 2) {
+            aabb->z1 += 0.25;
+        } else if (dir == 3) {
+            aabb->z2 -= 0.25;
+        } else if (dir == 4) {
+            aabb->x1 += 0.25;
+        } else if (dir == 5) {
+            aabb->x2 -= 0.25;
+        }
+    }
+}
+
 struct PistonBase final : CustomTile {
     bool sticky;
 
@@ -224,15 +249,14 @@ struct PistonBase final : CustomTile {
         neighborChanged(level, x, y, z, 0);
     }
 
-    int getTexture3(UNUSED LevelSource *levelsrc, int x, int y, int z, int face) override {
-        int data = mc->level->getData(x, y, z);
+    int getTexture2(int face, int data) override {
         bool is_extended = data & 0b1000;
         data &= 0b0111;
         if (data == face || data == 7) {
             if (is_extended && data != 7) {
                 return PISTON_HEAD_TEXTURE_EXTENDED;
             }
-            if (((PistonBase *)(Tile *) self)->sticky) {
+            if (self->id == sticky_piston_base->id) {
                 return PISTON_HEAD_TEXTURE_STICKY;
             } else {
                 return PISTON_HEAD_TEXTURE;
@@ -463,36 +487,7 @@ struct PistonBase final : CustomTile {
     }
 
     AABB *getAABB(UNUSED Level *level, int x, int y, int z) override {
-        int data = level->getData(x, y, z);
-        int dir = data & 0b0111, on = data & 0b1000;
-        self->aabb.x1 = x;
-        self->aabb.y1 = y;
-        self->aabb.z1 = z;
-        self->aabb.x2 = x + 1.f;
-        self->aabb.y2 = y + 1.f;
-        self->aabb.z2 = z + 1.f;
-        if (on && data != 0b1111) {
-            if (dir == 0) {
-                self->aabb.y1 += 0.25;
-            } else if (dir == 1) {
-                self->aabb.y2 -= 0.25;
-            } else if (dir == 2) {
-                self->aabb.z1 += 0.25;
-            } else if (dir == 3) {
-                self->aabb.z2 -= 0.25;
-            } else if (dir == 4) {
-                self->aabb.x1 += 0.25;
-            } else if (dir == 5) {
-                self->aabb.x2 -= 0.25;
-            }
-        }
-        // Set shape, it's wrong but why not?
-        /*self->x1 = self->aabb.x1;
-        self->y1 = self->aabb.y1;
-        self->z1 = self->aabb.z1;
-        self->x2 = self->aabb.x2;
-        self->y2 = self->aabb.y2;
-        self->z2 = self->aabb.z2;*/
+        Piston_getAABB(&self->aabb, x, y, z, level->getData(x, y, z));
         return &self->aabb;
     }
 
@@ -664,11 +659,16 @@ struct PistonHead final : CustomTile {
     }
 
     int getTexture2(UNUSED int face, int data) override {
-        return (data & 0b1000) ?
-            // Sticky
-            6*16+10:
-            // Not sticky
-            6*16+11;
+        if (face == (data & 0b0111)) {
+            return (data & 0b1000) ?
+                // Sticky
+                6*16+10:
+                // Not sticky
+                6*16+11;
+        } else if ((face ^ 1) == (data & 0b0111)) {
+            return 6*16+11;
+        }
+        return 6*16+12;
     }
 
     static constexpr float AABB_BI = 0.375f;
@@ -739,6 +739,10 @@ struct PistonHead final : CustomTile {
 
     bool isSolidRender() override {
         return false;
+    }
+
+    int getRenderShape() override {
+	   return 54;
     }
 };
 
@@ -823,10 +827,7 @@ struct PistonTileEntityRenderer final : CustomTileEntityRenderer {
                 t = piston_base;
             }
 
-            // TODO: FIX THIS ASAP
-            //TileRenderer_tesselatePiston(t, 0, 0, 0, piston_te->moving_meta & 0b0111, piston_te->self->level);
-            // Ugly hack, a cobblestone looks kind of like a piston base, assuming you've never seen either
-            tr->renderTile(Tile::tiles[4], 0);
+            tr->renderTile(t, (piston_te->moving_meta & 0b0111) | 0b1000);
 
             media_glPopMatrix();
         }

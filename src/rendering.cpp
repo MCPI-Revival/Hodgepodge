@@ -22,9 +22,6 @@
 #include <symbols/Tile.h>
 #include <symbols/Level.h>
 
-// The size of a single tile in terrain.png (16 / 256)
-constexpr float UV_S = 0.0625;
-
 // Renders the belts
 #define RENDER_SQUARE_NO_YZ(x, y, z, xp, yp, zp, u, v, up, vp) \
     t->vertexUV(xp, yp, z,  up, v ); \
@@ -143,129 +140,174 @@ static bool TileRenderer_tesselateOddlyBrightBlockInWorld(TileRenderer *self, UN
     return true;
 }
 
-#define PISTON_CROP_SIZE (4.f/256.f)
 #define SET_HB(side) \
-    uv_o = 0.f;  \
-    if (dir == side) { \
-        u = u_h; \
-        v = v_h; \
-    } else if (dir == (side ^ 1)) { \
-        u = u_b; \
-        v = v_b; \
-    } else { \
-        u = u_s; \
-        v = v_s; \
-        /* Need to adjust for size */ \
-        uv_o = PISTON_CROP_SIZE * on; \
-    }
+    uv_o = 0.0f; \
+    u = (tile->getTexture2(side, data) & 0xf) << 4; \
+    v = (tile->getTexture2(side, data) & 0xf0); \
+    u /= 256.f; \
+    v /= 256.f; \
+    if (dir != side && dir != (side ^ 1)) { uv_o = cutoff; uv_no = -ncutoff; }
 
 #define ROT_TEXT(s1, s2, s3, s4) \
     if (dir == s1) { \
         us[0] = us[1] = u + UV_S; \
         us[2] = us[3] = u; \
-        vs[1] = vs[2] = v + UV_S; \
+        vs[1] = vs[2] = v + v_size + uv_no; \
         vs[0] = vs[3] = v + uv_o; \
     } else if (dir == s2) { \
         us[0] = us[1] = u; \
         us[2] = us[3] = u + UV_S; \
         vs[1] = vs[2] = v + uv_o; \
-        vs[0] = vs[3] = v + UV_S; \
+        vs[0] = vs[3] = v + v_size + uv_no; \
     } else if (dir == s3) { \
         us[0] = us[3] = u + UV_S; \
         us[2] = us[1] = u; \
-        vs[3] = vs[2] = v + UV_S; \
+        vs[3] = vs[2] = v + v_size + uv_no; \
         vs[0] = vs[1] = v + uv_o; \
     } else if (dir == s4) { \
         us[0] = us[1] = u; \
         us[2] = us[3] = u + UV_S; \
         vs[1] = vs[2] = v; \
-        vs[0] = vs[3] = v + UV_S; \
+        vs[0] = vs[3] = v + v_size; \
     } else if (dir == (s4 ^ 1)) { \
         us[0] = us[3] = u; \
         us[2] = us[1] = u + UV_S; \
         vs[3] = vs[2] = v; \
-        vs[0] = vs[1] = v + UV_S; \
+        vs[0] = vs[1] = v + v_size; \
     } else { \
         us[0] = us[3] = u; \
         us[2] = us[1] = u + UV_S; \
         vs[3] = vs[2] = v + uv_o; \
-        vs[0] = vs[1] = v + UV_S; \
+        vs[0] = vs[1] = v + v_size + uv_no; \
     }
 
-bool TileRenderer_tesselatePiston(Tile *tile, float x, float y, float z, int data, Level *level) {
+#define SHIFT(shift) \
+    if (shift) { \
+        u = us[3]; us[3] = us[2]; us[2] = us[1]; us[1] = us[0]; us[0] = u; \
+        v = vs[3]; vs[3] = vs[2]; vs[2] = vs[1]; vs[1] = vs[0]; vs[0] = v; \
+    } \
+
+#define PISTON_CROP_SIZE (4.f/256.f)
+bool TileRenderer_tesselateBlockInWorldWithTextureRotation(
+    Tile *tile, float x, float y, float z, int data, Level *level,
+    float cutoff /*= 0*/, float ncutoff /*= 0*/, bool shift /*= false*/,
+    float v_size /*= UV_S*/
+) {
     Tesselator *t = &Tesselator::instance;
     float brightness = level ?
         (float) tile->getBrightness((LevelSource *) level, x, y, z)
         : 1;
     brightness *= 256;
     t->color(brightness, brightness, brightness, 0xff);
-    // Get textures
-    int head = tile->id == sticky_piston_base->id ? PISTON_HEAD_TEXTURE_STICKY : PISTON_HEAD_TEXTURE;
-    bool on = (data & 0b1000) != 0;
-    if (on) head = PISTON_HEAD_TEXTURE_EXTENDED;
-    float u_h = (head & 0xf) << 4, v_h = (head & 0xf0);
-    u_h /= 256.f;
-    v_h /= 256.f;
-    float u_s = (PISTON_SIDE_TEXTURE & 0xf) << 4, v_s = (PISTON_SIDE_TEXTURE & 0xf0);
-    u_s /= 256.f;
-    v_s /= 256.f;
-    float u_b = (PISTON_BACK_TEXTURE & 0xf) << 4, v_b = (PISTON_BACK_TEXTURE & 0xf0);
-    u_b /= 256.f;
-    v_b /= 256.f;
-    float u, v, uv_s = UV_S, uv_o = 0.f, us[4], vs[4];
-    // Get dir
     int dir = data & 0b0111;
+
     // Get AABB
     AABB aabb = AABB{
-        .x1 = x,
-        .y1 = y,
-        .z1 = z,
-        .x2 = x + 1.f,
-        .y2 = y + 1.f,
-        .z2 = z + 1.f
+        .x1 = x + tile->x1,
+        .y1 = y + tile->y1,
+        .z1 = z + tile->z1,
+        .x2 = x + tile->x2,
+        .y2 = y + tile->y2,
+        .z2 = z + tile->z2
     };
     if (level) aabb = *tile->getAABB(level, x, y, z);
-    // Top and bottom
-    // TODO Make it go back too
+    // Hack but idrc
+    else if ((tile->id == piston_base->id || tile->id == sticky_piston_base->id) && (data & 0b1000) != 0) {
+        Piston_getAABB(&aabb, x, y, z, data);
+    }
+    // Get textures
+    float u, v, uv_o, uv_no, us[4], vs[4];
     SET_HB(0);
     ROT_TEXT(2, 3, 5, 1);
+    SHIFT(shift);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[3], vs[3]);
     SET_HB(1);
-    ROT_TEXT(3, 2, 5, -1);
+    ROT_TEXT(3, 2, 5, 1);
+    SHIFT(shift);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
-    // aabb.x1 sides
     SET_HB(2);
     ROT_TEXT(1, 0, 5, 2);
+    SHIFT(shift);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[3], vs[3]);
     SET_HB(3);
     ROT_TEXT(1, 0, 4, 3);
+    SHIFT(shift);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[0], vs[0]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[1], vs[1]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[2], vs[2]);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[3], vs[3]);
-    // aabb.z1 sides
     SET_HB(4);
     ROT_TEXT(1, 0, 2, 4);
+    SHIFT(shift);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z1, us[0], vs[0]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z1, us[1], vs[1]);
     t->vertexUV(aabb.x1, aabb.y1, aabb.z2, us[2], vs[2]);
     t->vertexUV(aabb.x1, aabb.y2, aabb.z2, us[3], vs[3]);
     SET_HB(5);
     ROT_TEXT(1, 0, 3, 5);
+    SHIFT(shift);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z2, us[0], vs[0]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z2, us[1], vs[1]);
     t->vertexUV(aabb.x2, aabb.y1, aabb.z1, us[2], vs[2]);
     t->vertexUV(aabb.x2, aabb.y2, aabb.z1, us[3], vs[3]);
     return true;
+}
+
+#define SS_AND_RENDER(x1, y1, z1, x2, y2, z2) \
+    tile->setShape(x1, y1, z1, x2, y2, z2); if (gui) { self->renderGuiTile(tile, 0); } else { self->tesselateBlockInWorld(tile, x, y, z); }
+#define SS_AND_RENDER_ARM(x1, y1, z1, x2, y2, z2) \
+    tile->setShape(x1, y1, z1, x2, y2, z2); if (gui) { self->renderGuiTile(tile, 0); } else { \
+        TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, x, y, z, data, level, 0, 0, true, 4.f/256.f); \
+    }
+#define SS_AND_RENDER_ROT(x1, y1, z1, x2, y2, z2) \
+    tile->setShape(x1, y1, z1, x2, y2, z2); if (gui) { self->renderGuiTile(tile, 0); } else { \
+        TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, x, y, z, data, level, 0, (16.f/256.f) - PISTON_CROP_SIZE); \
+    }
+
+bool TileRenderer_tesselatePistonHead(TileRenderer *self, Tile *tile, float x, float y, float z, int data, Level *level, bool gui = false) {
+    static constexpr float AABB_BI = 0.375f;
+    static constexpr float AABB_BO = (1 - AABB_BI);
+    static constexpr float AABB_HI = 0.25f;
+    static constexpr float AABB_HO = (1 - AABB_HI);
+
+    Tesselator *t = &Tesselator::instance;
+    float brightness = level ?
+        (float) tile->getBrightness((LevelSource *) level, x, y, z)
+        : 1;
+
+    int dir = data & 0b0111;
+    if (dir == 0) {
+        SS_AND_RENDER_ROT(0.0f, 0.0f, 0.0f, 1.0f, AABB_HI, 1.0f);
+        SS_AND_RENDER_ARM(AABB_BI, AABB_HI, AABB_BI, AABB_BO, 1.25f, AABB_BO);
+    } else if (dir == 1) {
+        SS_AND_RENDER_ROT(0.0f, 1.0f - AABB_HI, 0.0f, 1.0f, 1.0f, 1.0f);
+        SS_AND_RENDER_ARM(AABB_BI, -0.25f, AABB_BI, AABB_BO, AABB_HO, AABB_BO);
+    } else if (dir == 2) {
+        SS_AND_RENDER_ROT(0.0f, 0.0f, 0.0f, 1.0f, 1.0f, AABB_HI);
+        SS_AND_RENDER_ARM(AABB_BI, AABB_BI, AABB_HI, AABB_BO, AABB_BO, 1.25f);
+    } else if (dir == 3) {
+        SS_AND_RENDER_ROT(0.0f, 0.0f, 1.0f - AABB_HI, 1.0f, 1.0f, 1.0f);
+        SS_AND_RENDER_ARM(AABB_BI, AABB_BI, -0.25f, AABB_BO, AABB_BO, AABB_HO);
+    } else if (dir == 4) {
+        SS_AND_RENDER_ROT(0.0f, 0.0f, 0.0f, AABB_HI, 1.0f, 1.0f);
+        SS_AND_RENDER_ARM(AABB_HI, AABB_BI, AABB_BI, 1.25f, AABB_BO, AABB_BO);
+    } else if (dir == 5) {
+        SS_AND_RENDER_ROT(1.0f - AABB_HI, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+        SS_AND_RENDER_ARM(-0.25f, AABB_BI, AABB_BI, AABB_HO, AABB_BO, AABB_BO);
+    }
+    tile->setShape(0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+
+    return true;
+
 }
 
 // Render of Pedestal
@@ -277,38 +319,14 @@ static bool TileRenderer_tesselatePedestalInWorld(TileRenderer *self, Tile *tile
 
     // Shaft
     tile->texture = 213;
-    tile->setShape(
-        0.2, 0.0, 0.2,
-        0.8, 0.8, 0.8
-    );
-    if (gui) {
-        self->renderGuiTile(tile, 0);
-    } else {
-        self->tesselateBlockInWorld(tile, x, y, z);
-    }
+    SS_AND_RENDER(0.2, 0.0, 0.2, 0.8, 0.8, 0.8);
 
     // Top layer 1
     tile->texture = 212;
-    tile->setShape(
-        0.05, 0.8, 0.05,
-        0.95, 0.9, 0.95
-    );
-    if (gui) {
-        self->renderGuiTile(tile, 0);
-    } else {
-        self->tesselateBlockInWorld(tile, x, y, z);
-    }
+    SS_AND_RENDER(0.05, 0.8, 0.05, 0.95, 0.9, 0.95);
 
     // Top layer 2
-    tile->setShape(
-        0.0, 0.90, 0.0,
-        1.0, 1.0,  1.0
-    );
-    if (gui) {
-        self->renderGuiTile(tile, 0);
-    } else {
-        self->tesselateBlockInWorld(tile, x, y, z);
-    }
+    SS_AND_RENDER(0.0, 0.90, 0.0, 1.0, 1.0,  1.0);
 
     // Done
     tile->setShape(0, 0, 0, 1, 1, 1);
@@ -471,11 +489,11 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
     int dir = data & 0b0011;
     self->tesselateBlockInWorld(tile, x, y, z);
     // Render torches
-	Tesselator *t = &Tesselator::instance;
-	float brightness = tile->getBrightness(self->level, x, y, z);
+    Tesselator *t = &Tesselator::instance;
+    float brightness = tile->getBrightness(self->level, x, y, z);
     brightness *= 256;
-	t->color(brightness, brightness, brightness, 255);
-    static float delay_offset[] = {-0.125, 0.125, 0.1875, 0.3125};
+    t->color(brightness, brightness, brightness, 255);
+    static float delay_offset[] = {-1.0f / 16.0f, 1.0f / 16.0f, 3.0f / 16.0f, 5.0f / 16.0f};
     float tx1 = 0, tx2 = 0, tz1 = 0, tz2 = 0, ty = -0.1875;
     float txzo = -0.3125;
     if (dir == 0 || dir == 2) {
@@ -547,11 +565,15 @@ OVERWRITE_CALLS(
         return TileRenderer_tesselatePedestalInWorld(self, tile, x, y, z);
     } else if (shape == 50) {
         int data = self->level->getData(x, y, z);
-        return TileRenderer_tesselatePiston(tile, x, y, z, data, mc->level);
+        float cutoff = PISTON_CROP_SIZE * ((data & 0b1000) != 0);
+        return TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, x, y, z, data, mc->level, cutoff);
     } else if (shape == 52) {
         return TileRenderer_tesselateDust(self, tile, x, y, z);
     } else if (shape == 53) {
         return TileRenderer_tesselateRepeater(self, tile, x, y, z);
+    } else if (shape == 54) {
+        int data = self->level->getData(x, y, z);
+        return TileRenderer_tesselatePistonHead(self, tile, x, y, z, data, mc->level);
     }
     return original(self, tile, x, y, z);
 }
@@ -571,7 +593,7 @@ static void TileRenderer_renderGuiTile_injection(TileRenderer_renderGuiTile_t or
     } else if (shape == 50) {
         Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
         Tesselator::instance.begin(7);
-        TileRenderer_tesselatePiston(tile, 0, 0, 0, 1, NULL);
+        TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, 0, 0, 0, 1, NULL);
         Tesselator::instance.draw();
         Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else {
@@ -583,6 +605,7 @@ OVERWRITE_CALLS(
     void, TileRenderer_renderTile_injection, (TileRenderer_renderTile_t original, TileRenderer *self, Tile *tile, int aux)
 ) {
     // This renders for anything ItemInHandRenderer::renderItem uses (which includes dropped items afaik)
+    // As well, pistons moving tiles
     int shape = tile->getRenderShape();
     if (shape == 47) {
         // Belts
@@ -596,7 +619,21 @@ OVERWRITE_CALLS(
         TileRenderer_tesselatePedestalInWorld(self, tile, -0.5f, -0.5f, -0.5f, true);
     } else if (shape == 50) {
         // Piston
-        TileRenderer_tesselatePiston(tile, -0.5f, -0.5f, -0.5f, 1, NULL);
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
+        if ((aux & 0b1000) != 0) {
+            TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, 0.0f, 0.0f, 0.0f, aux, NULL, PISTON_CROP_SIZE);
+        } else {
+            TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, 0.0f, 0.0f, 0.0f, 1, NULL);
+        }
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
+    } else if (shape == 54) {
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
+        TileRenderer_tesselatePistonHead(self, tile, 0, 0, 0, aux, NULL);
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else {
         original(self, tile, aux);
     }

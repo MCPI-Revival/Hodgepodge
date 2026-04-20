@@ -6,7 +6,7 @@ This mod adds some useful things, such as QoL features, fixing bugs, adding reds
 
 ## Installing
 
-Currently this mod works with both Reborn 2.5.3 and 3.0.0. **MCPI++ doesn't work with it.**
+Currently this mod works with Reborn 3.0.0.
 
 - Grab `libredstone.so` from releases tag and put it in `~/.minecraft-pi/mods/` (or `~/.var/app/com.thebrokenrail.MCPIReborn/.minecraft-pi/mods/` if you use the flatpak)
 - Put `assets/terrain.png` in `~/.minecraft-pi/overrides/images/` (or `~/.var/app/com.thebrokenrail.MCPIReborn/.minecraft-pi/overrides/images/` if you use the flatpak)
@@ -15,9 +15,7 @@ Currently this mod works with both Reborn 2.5.3 and 3.0.0. **MCPI++ doesn't work
 
 ## Building
 
-Run `make`, after running latest (and I mean latest, not latest release, absolute [latest build](https://gitea.thebrokenrail.com/minecraft-pi-reborn/minecraft-pi-reborn/actions)), you don't actually have to run it using `--copy-sdk` works fine as well. Using the Flatpak's symbols isn't supported because it is too slow to update, but if you insist just change all `~` to `~/.var/app/com.thebrokenrail.MCPIReborn/` in the makefile.
-
-If for some weird reason you like CMake, the CMakeLists.txt for it was provided by the wonderful [@TheBrokenRail](https://github.com/TheBrokenRail), it can be used by running `make cmake` and the build will be in `cmake/libredstone.so`.
+`cmake && make` and the build will be `libredstone.so`.
 
 ## Contributing
 

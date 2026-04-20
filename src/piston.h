@@ -16,3 +16,4 @@ extern Tile *piston_head;
 #define P_SPEED 0.5f
 #define P_RANGE 16
 void make_pistons();
+void Piston_getAABB(AABB *aabb, int x, int y, int z, int data);
