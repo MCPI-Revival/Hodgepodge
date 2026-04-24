@@ -31,5 +31,6 @@ add_library(redstone SHARED
     src/jungle_tree.cpp
     src/pedestal.cpp
     src/pistons.cpp
+    src/minecarts.cpp
 )
 target_link_libraries(redstone mods reborn-patch symbols)

@@ -21,6 +21,7 @@
 #include "redstone.h"
 //#include "inventory.h"
 #include "oddly_bright_block.h"
+#include "minecarts.h"
 
 #ifdef FISH
 #include <mods/compat/compat.h>
@@ -87,18 +88,25 @@ static void mcpi_callback(Minecraft *mcpi) {
 static void Inventory_setupDefault_FillingContainer_addItem_call_injection(FillingContainer *filling_container) {
     ADD_ITEM(REDSTONE_ID);
     ADD_ITEM(REPEATER_ID);
+    ADD_ITEM(123); // Lamp
+    ADD_ITEM(33); // Piston
+    ADD_ITEM(29); // Sticky piston
+    //ADD_ITEM(36); // Moving piston
+    ADD_ITEM(152); // Redstone block
+    ADD_ITEM(MINECART_ITEM_ID);
+    ADD_ITEM(RAIL_ID);
+    ADD_ITEM(POWERED_RAIL_ID);
+    //ADD_ITEM(DETECTOR_RAIL_ID);
+
+    // Custom stuff
     ADD_ITEM(BELT_ID);
     ADD_ITEM(PEDESTAL_ID);
     ADD_ITEM(ENDER_PEARL_ITEM_ID);
     ADD_ITEM(BOMB_ITEM_ID);
     ADD_ITEM(DASH_ITEM_ID);
     ADD_ITEM(NETHER_WAND_ID);
-    ADD_ITEM(123); // Lamp
-    ADD_ITEM(33); // Piston
-    ADD_ITEM(29); // Sticky piston
-    //ADD_ITEM(36); // Moving piston
-    ADD_ITEM(152); // Redstone block
     ADD_ITEM(153); // Active redstone block
+
     // OBBs
     /*for (int i = 0; i < 16; i++) {
         ADD_ITEM_AUX(OBB_ID, i);
@@ -240,6 +248,7 @@ static void Tile_initTiles_injection() {
     make_pistons();
     make_redstone_blocks();
     make_redstone_wire();
+    make_rails();
     make_lamp(123, false);
     make_lamp(124, true);
 }
@@ -250,6 +259,7 @@ static void Item_initItems_injection() {
     make_bomb();
     make_dash();
     make_redstone_tileitems();
+    make_minecart_item();
 }
 
 static void Language_injection() {

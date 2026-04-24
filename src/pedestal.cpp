@@ -154,10 +154,7 @@ struct Pedestal : CustomEntityTile {
             Inventory *inventory = player->inventory;
             if (!inventory->add(&tileentity->item)) {
                 // Drop on the ground
-                ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
-                item_entity->constructor(level, x + 0.5f, y + 1, z + 0.5f, tileentity->item);
-                item_entity->moveTo(x + 0.5f, y + 1, z + 0.5f, 0, 0);
-                level->addEntity((Entity *) item_entity);
+                summon_item(level, x + 0.5f, y + 1, z + 0.5f, tileentity->item);
             }
             tileentity->item = {0, 0, 0};
         }

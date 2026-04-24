@@ -632,11 +632,8 @@ struct PistonHead final : CustomTile {
         if ((id == sticky_piston_base->id || id == piston_base->id) && data == (dir | 8)) {
             level->setTile(xo, yo, zo, 0);
             // Add item
-            ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
             ItemInstance item = {.count = 1, .id = id, .auxiliary = 0};
-            item_entity->constructor(level, xo + 0.5f, yo, zo + 0.5f, item);
-            item_entity->moveTo(xo + 0.5f, yo, zo + 0.5f, 0, 0);
-            level->addEntity((Entity *) item_entity);
+            summon_item(level, xo + 0.5f, yo, zo + 0.5f, item);
         }
     }
 

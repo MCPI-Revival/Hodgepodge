@@ -26,9 +26,7 @@ static bool PrimedTnt_interact_injection(PrimedTnt *self, Player *player) {
         item->auxiliary -= 1;
         // Spawn item
         ItemInstance i = {.count = 1, .id = 46, .auxiliary = 1};
-        ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, self->level);
-        item_entity->constructor(self->level, self->x + 0.5f, self->y, self->z + 0.5f, i);
-        self->level->addEntity((Entity *) item_entity);
+        summon_item(self->level, self->x + 0.5f, self->y, self->z + 0.5f, i);
         // Remove tnt
         self->remove();
         return true;

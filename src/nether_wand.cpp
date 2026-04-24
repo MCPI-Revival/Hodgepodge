@@ -10,7 +10,6 @@
 #include <symbols/TileEntity.h>
 #include <symbols/GameMode.h>
 #include <symbols/Player.h>
-#include <symbols/ItemEntity.h>
 #include <symbols/Mob.h>
 #include <symbols/Inventory.h>
 #include <symbols/EntityFactory.h>
@@ -164,11 +163,7 @@ struct NetherWandItem final : CustomItem {
         } else {
             // Item
             ItemInstance i = {.count = 1, .id = id, .auxiliary = data};
-            ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
-            item_entity->constructor(level, x + 0.5f, y, z + 0.5f, i);
-            item_entity->moveTo(x + 0.5f, y, z + 0.5f, 0, 0);
-            level->addEntity((Entity *) item_entity);
-            level->setTileAndData(x, y, z, 0, 0);
+            summon_item(level, x + 0.5f, y, z + 0.5f, i);
         }
         show_particles_and_pop(level, (Entity *) player, x, y, z, false);
 

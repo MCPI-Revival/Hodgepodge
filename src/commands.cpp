@@ -17,6 +17,7 @@
 
 #include "api.h"
 #include "bomb.h"
+#include "minecarts.h"
 
 std::map<std::string, int> MOB_IDS = {
     {"chicken", 10}, {"cow", 11},
@@ -267,6 +268,9 @@ HOOK(chat_handle_packet_send, void, (const Minecraft *minecraft_, ChatPacket *pa
         minecraft->gui.addMessage("/kill_all       kills everything");
         minecraft->gui.addMessage("/emojis         list emojis");
         minecraft->gui.addMessage("/summon [mob] <[x] [y] [z]>");
+    } else if (content == "cart") {
+        Minecart *cart = new Minecart(minecraft->level, minecraft->player->x, minecraft->player->y, minecraft->player->z);
+        minecraft->level->addEntity((Entity *) cart->self);
     } else {
         // Unknown command, forward it
         minecraft->gui.addMessage("Unknown command \"" + content + "\"! Use /help for help or use //<text> to send /<text>");

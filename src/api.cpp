@@ -1,4 +1,5 @@
-#include <dlfcn.h>
+#include <symbols/ItemEntity.h>
+#include <symbols/EntityFactory.h>
 
 #include "api.h"
 
@@ -8,17 +9,9 @@ CompoundTag *CompoundTag_getCompound_but_not(CompoundTag *self, const std::strin
     return (CompoundTag *) (int) self->getShort(_name);
 }
 
-#ifdef FISH
-// The most important function
-bool is_fish() {
-    static signed char t = -1;
-    if (t != -1) return t == 1;
-    // Check
-    time_t rawtime;
-    time(&rawtime);
-    struct tm *timeinfo = localtime(&rawtime);
-    t = (timeinfo->tm_mday == 1 && timeinfo->tm_mon == 3);
-    // Return
-    return t == 1;
+void summon_item(Level *level, float x, float y, float z, ItemInstance item) {
+    ItemEntity *item_entity = (ItemEntity *) EntityFactory::CreateEntity(64, level);
+    item_entity->constructor(level, x, y, z, item);
+    item_entity->moveTo(x, y, z, 0, 0);
+    level->addEntity((Entity *) item_entity);
 }
-#endif

@@ -5,6 +5,7 @@
 #include "belt.h"
 #include "piston.h"
 #include "redstone.h"
+#include "minecarts.h"
 #include "rendering.h"
 #include "oddly_bright_block.h"
 
@@ -543,6 +544,68 @@ bool TileRenderer_tesselateRepeater(TileRenderer *self, Tile *tile, int x, int y
     return true;
 }
 
+bool TileRenderer_tesselateRailTileInWorld(TileRenderer *self, Tile *tile, int x, int y, int z, Level *level = NULL) {
+    int data = level ? level->getData(x, y, z) : 0;
+    int dir = tile->id == RAIL_ID ? data : (data & 0b111);
+
+    Tesselator *t = &Tesselator::instance;
+    float brightness = level ?
+        (float) tile->getBrightness((LevelSource *) level, x, y, z)
+        : 1;
+    brightness *= 256;
+    t->color(brightness, brightness, brightness, 0xff);
+
+    int tex = tile->getTexture2(0, data);
+    float u = (tex & 0xf) << 4;
+    float v = (tex & 0xf0);
+    u /= 256.f;
+    v /= 256.f;
+
+    float h = 0.0625;
+    float xx[4] = {x + 1.f, x + 1.f, (float)x, (float)x};
+    float zz[4] = {(float)z, z + 1.f, z + 1.f, (float)z};
+    float yy[4] = {y + h, y + h, y + h, y + h};
+
+    if (dir == 1 || dir == 2 || dir == 3 || dir == 7) {
+        // Rotate
+        xx[1] = x;
+        xx[3] = x + 1;
+        zz[0] = z + 1;
+        zz[2] = z;
+    } else if (dir == 8) {
+        // Flip
+        xx[0] = xx[1] = x;
+        xx[2] = xx[3] = x + 1;
+        zz[0] = zz[3] = z + 1;
+        zz[1] = zz[2] = z;
+    } else if (dir == 9) {
+        // Rotate
+        xx[0] = x;
+        xx[2] = x + 1;
+        zz[1] = z;
+        zz[3] = z + 1;
+    }
+
+    // Y offsets
+    if (dir == 2 || dir == 4) {
+        yy[0] = yy[3] = y + h + 1.f;
+    } else if (dir == 3 || dir == 5) {
+        yy[1] = yy[2] = y + h + 1.f;
+    }
+
+    t->vertexUV(xx[0], yy[0], zz[0], u + UV_S, v);
+    t->vertexUV(xx[1], yy[1], zz[1], u + UV_S, v + UV_S);
+    t->vertexUV(xx[2], yy[2], zz[2], u, v + UV_S);
+    t->vertexUV(xx[3], yy[3], zz[3], u, v);
+
+    t->vertexUV(xx[3], yy[3], zz[3], u, v);
+    t->vertexUV(xx[2], yy[2], zz[2], u, v + UV_S);
+    t->vertexUV(xx[1], yy[1], zz[1], u + UV_S, v + UV_S);
+    t->vertexUV(xx[0], yy[0], zz[0], u + UV_S, v);
+
+    return true;
+}
+
 // Inject
 bool isSolidRenderTile(LevelSource *level, int x, int y, int z) {
     int tile = level->getTile(x, y, z);
@@ -574,6 +637,8 @@ OVERWRITE_CALLS(
     } else if (shape == 54) {
         int data = self->level->getData(x, y, z);
         return TileRenderer_tesselatePistonHead(self, tile, x, y, z, data, mc->level);
+    } else if (shape == 55) {
+        return TileRenderer_tesselateRailTileInWorld(self, tile, x, y, z, mc->level);
     }
     return original(self, tile, x, y, z);
 }
@@ -594,6 +659,12 @@ static void TileRenderer_renderGuiTile_injection(TileRenderer_renderGuiTile_t or
         Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
         Tesselator::instance.begin(7);
         TileRenderer_tesselateBlockInWorldWithTextureRotation(tile, 0, 0, 0, 1, NULL);
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
+    } else if (shape == 55) {
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
+        TileRenderer_tesselateRailTileInWorld(self, tile, 0, 0, 0);
         Tesselator::instance.draw();
         Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else {
@@ -632,6 +703,12 @@ OVERWRITE_CALLS(
         Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
         Tesselator::instance.begin(7);
         TileRenderer_tesselatePistonHead(self, tile, 0, 0, 0, aux, NULL);
+        Tesselator::instance.draw();
+        Tesselator::instance.addOffset(0.5, 0.5, 0.5);
+    } else if (shape == 55) {
+        Tesselator::instance.addOffset(-0.5, -0.5, -0.5);
+        Tesselator::instance.begin(7);
+        TileRenderer_tesselateRailTileInWorld(self, tile, 0, 0, 0);
         Tesselator::instance.draw();
         Tesselator::instance.addOffset(0.5, 0.5, 0.5);
     } else {

@@ -252,11 +252,12 @@ struct RedstoneWire final : CustomTile {
     void neighborChanged(Level *level, int x, int y, int z, UNUSED int neighborId) override {
         if (!mayPlace2(level, x, y, z)) {
             level->setTile(x, y, z, 0);
-            // TODO drop on ground
+            summon_item(level, x, y, z, ItemInstance{
+                .count = 1, .id = self->id, .auxiliary = 0
+            });
             return;
-        } else {
-            propagate(level, x, y, z);
         }
+        propagate(level, x, y, z);
     }
 
     #define UPDATE_IF_SOLID(x2, y2, z2) \
@@ -554,8 +555,8 @@ struct ActiveRedstoneBlock final : BaseRedstoneBlock {
 
 void make_redstone_torch();
 void make_redstone_block() {
-    redstone_block = (new RedstoneBlock(152, 173, Material::glass))->self;
-    active_redstone_block = (new ActiveRedstoneBlock(153, 191, Material::glass))->self;
+    redstone_block = (new RedstoneBlock(152, 173, Material::metal))->self;
+    active_redstone_block = (new ActiveRedstoneBlock(153, 191, Material::metal))->self;
 
     // Init
     redstone_block->init();
@@ -733,7 +734,7 @@ struct Lamp final : CustomTile {
 
 void make_lamp(int id, bool active) {
     Tile *new_lamp = (new Lamp(id, (11+16*11) + active, Material::glass))->self;
-    if (active) Tile::lightEmission[id] = 300;
+    if (active) Tile::lightEmission[id] = 15;
 
     new_lamp->init();
     new_lamp->setDestroyTime(0.3f);

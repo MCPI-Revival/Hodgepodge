@@ -2,6 +2,7 @@
 #pragma once
 
 #include <symbols/Item.h>
+#include <symbols/Level.h>
 #include <symbols/Tile.h>
 #include <libreborn/patch.h>
 #include <cstring>
@@ -57,6 +58,7 @@
 
 // Some decompiled symbols
 CompoundTag *CompoundTag_getCompound_but_not(CompoundTag *self, const std::string &name);
+void summon_item(Level *level, float x, float y, float z, ItemInstance item);
 
 // Misc Symbols
 static Item::VTable *WeaponItem_vtable = (Item::VTable *) 0x10ef30;
